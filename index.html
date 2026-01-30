@@ -6,6 +6,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#059669">
 <title>Gestion Groupe Oumrah</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="favicon.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:linear-gradient(135deg,#d1fae5 0%,#99f6e4 50%,#a5f3fc 100%);min-height:100vh;padding-bottom:100px}
@@ -86,34 +92,363 @@ ol li{margin-bottom:8px;color:#374151}
 .audio-btn:active{transform:scale(0.95)}
 .audio-text{background:white;padding:15px;border-radius:10px;text-align:center;font-size:18px;margin-bottom:15px;direction:rtl}
 .audio-progress{width:100%;height:8px;background:#bfdbfe;border-radius:10px;margin:15px 0;position:relative}
+
+#versionBadge{position:fixed;top:10px;right:10px;z-index:9999;background:#0B1220;color:#fff;padding:6px 10px;border-radius:999px;font-weight:900;font-size:12px;opacity:.75}
+
+/* ===== v7 Dark Premium Theme ===== */
+:root{
+  --bg:#0b0f14;
+  --card:#141a22;
+  --card2:#10161d;
+  --text:#f8fafc;
+  --muted:#94a3b8;
+  --brand:#d6b56c; /* gold */
+  --brand2:#19c37d; /* accent green */
+  --border:rgba(148,163,184,.18);
+  --shadow:0 18px 40px rgba(0,0,0,.45);
+}
+body{background:radial-gradient(1200px 800px at 20% -10%, rgba(214,181,108,.18), transparent 55%),
+     radial-gradient(900px 700px at 110% 10%, rgba(25,195,125,.10), transparent 60%),
+     var(--bg)!important;color:var(--text)!important;}
+.topbar{background:rgba(20,26,34,.85)!important;border-bottom:1px solid var(--border)!important;backdrop-filter:blur(10px)}
+.card{background:linear-gradient(180deg, rgba(20,26,34,.92), rgba(16,22,29,.92))!important;border:1px solid var(--border)!important;box-shadow:var(--shadow)!important}
+h1,h2,h3{color:var(--text)!important}
+p,span,small{color:var(--muted)}
+.btn-primary{background:linear-gradient(90deg,var(--brand), #f0d392)!important;color:#111827!important;border:none!important;box-shadow:0 14px 30px rgba(214,181,108,.28)!important}
+.btn-secondary{background:rgba(148,163,184,.12)!important;color:var(--text)!important;border:1px solid var(--border)!important}
+.btn{border-radius:18px!important}
+input,select,textarea{background:rgba(2,6,23,.35)!important;color:var(--text)!important;border:1px solid var(--border)!important}
+.tabs{background:rgba(20,26,34,.88)!important;border-top:1px solid var(--border)!important}
+.tab{color:rgba(248,250,252,.72)!important}
+.tab.active{color:var(--brand)!important}
+.badge, .pill{background:rgba(214,181,108,.12)!important;border:1px solid rgba(214,181,108,.25)!important;color:var(--brand)!important}
+.audio-player{background:rgba(2,6,23,.35)!important;border:1px solid var(--border)!important}
+.audio-btn{background:rgba(214,181,108,.12)!important;border:1px solid rgba(214,181,108,.25)!important;color:var(--brand)!important}
+.progress{background:rgba(148,163,184,.14)!important}
+.progress > div{background:linear-gradient(90deg,var(--brand2), var(--brand))!important}
+
+
+/* v7 modal */
+.modal.hidden{display:none}
+.modal{position:fixed;inset:0;z-index:2000;display:flex;align-items:flex-end;justify-content:center}
+.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(2px)}
+.modal-card{position:relative;z-index:1;width:min(640px,100%);margin:0 auto;padding:14px 14px 18px;border-top-left-radius:22px;border-top-right-radius:22px;
+background:linear-gradient(180deg, rgba(20,26,34,.98), rgba(16,22,29,.98));border:1px solid var(--border);box-shadow:0 -24px 70px rgba(0,0,0,.55)}
+
 </style>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-database-compat.js"></script>
 </head>
 <body>
+<div id="versionBadge">v7.0.0</div>
 <div id="app"></div>
 <script>
+(async()=>{
+  try{
+    const key="umrah_sw_cleanup_v7.0.0";
+    if(!localStorage.getItem(key)) {
+      if('serviceWorker' in navigator) {
+        const regs=await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r=>r.unregister()));
+      }
+      if('caches' in window) {
+        const keys=await caches.keys();
+        await Promise.all(keys.map(k=>caches.delete(k)));
+      }
+      localStorage.setItem(key,"1");
+      location.reload();
+      return;
+    }
+  }catch(e){}
+})();
 let S={lang:localStorage.getItem('appLang')||'fr',showLangSelector:!localStorage.getItem('appLang'),userType:null,userName:'',userPhoto:null,userHotel:'',userRoom:'',pilgrimCode:'',groupCode:'',groupName:'',currentGroup:null,activeTab:'rites',expandedRite:null,tawafCount:0,saiCount:0,messages:[],pilgrims:[],activities:[],questions:[],completedSteps:{},pilgrimPresence:{},guideLocation:{lat:21.4225,lng:39.8262},showAddMessage:false,showAddPilgrim:false,showAddActivity:false,showAskQuestion:false,showEditPilgrim:false,editPilgrimId:null,viewPilgrimProgress:null,viewQuestions:false,showReconnect:false,guideCode:'',activityResponses:JSON.parse(localStorage.getItem('activityResponses')||'{}'),audioState:{}};
+
+/* ===== Firebase Realtime Sync (v7) ===== */
+let FB={enabled:false, app:null, db:null, group:null, unsub:null, _writing:false, _deb:null};
+
+function openDbSettings(){
+  document.getElementById('dbSettings')?.classList.remove('hidden');
+  const saved = localStorage.getItem('firebaseConfig');
+  if(saved){ document.getElementById('fbJson').value = saved; }
+}
+function closeDbSettings(){
+  document.getElementById('dbSettings')?.classList.add('hidden');
+}
+function saveDbSettings(){
+  const txt = document.getElementById('fbJson').value.trim();
+  if(!txt){ alert('Colle la config JSON.'); return; }
+  try{
+    const cfg = JSON.parse(txt);
+    localStorage.setItem('firebaseConfig', JSON.stringify(cfg));
+    alert('Config enregistrée. Recharge la page.');
+    location.reload();
+  }catch(e){
+    alert('JSON invalide : '+(e.message||e));
+  }
+}
+function clearDbSettings(){
+  localStorage.removeItem('firebaseConfig');
+  alert('Désactivé. Recharge la page.');
+  location.reload();
+}
+function fbInitIfPossible(){
+  try{
+    const txt = localStorage.getItem('firebaseConfig');
+    if(!txt) return;
+    const cfg = JSON.parse(txt);
+    if(!window.firebase || !firebase.initializeApp) return;
+    if(!FB.app){
+      FB.app = firebase.initializeApp(cfg);
+      FB.db = firebase.database();
+      FB.enabled = true;
+    }
+  }catch(e){
+    console.warn('Firebase init failed', e);
+  }
+}
+function fbGroupPath(){
+  if(!FB.enabled || !S.currentGroup) return null;
+  return 'groups/'+S.currentGroup+'/shared';
+}
+function fbSharedSnapshotToState(shared){
+  if(!shared) return;
+  // Merge shared fields only
+  const fields = ['messages','activities','questions','pilgrims','completedSteps','pilgrimPresence','guideLocation','activityResponses'];
+  fields.forEach(k=>{
+    if(shared[k]!==undefined){
+      S[k]=shared[k];
+    }
+  });
+  // keep activityResponses also in localStorage for offline fallback
+  try{ localStorage.setItem('activityResponses', JSON.stringify(S.activityResponses||{})); }catch(e){}
+  R();
+}
+function fbReadOnce(){
+  const path = fbGroupPath();
+  if(!path) return;
+  FB.db.ref(path).get().then(snap=>{
+    if(snap && snap.exists()){
+      fbSharedSnapshotToState(snap.val());
+    }else{
+      // first writer: publish current shared state
+      fbWriteShared();
+    }
+  }).catch(()=>{});
+}
+function fbListen(){
+  const path = fbGroupPath();
+  if(!path) return;
+  if(FB.unsub){ try{FB.unsub.off();}catch(e){} FB.unsub=null; }
+  const ref = FB.db.ref(path);
+  const cb = (snap)=>{
+    if(FB._writing) return;
+    if(snap && snap.exists()){
+      fbSharedSnapshotToState(snap.val());
+    }
+  };
+  ref.on('value', cb);
+  FB.unsub = ref;
+}
+function fbWriteShared(){
+  const path = fbGroupPath();
+  if(!path) return;
+  const payload = {
+    messages: S.messages||[],
+    activities: S.activities||[],
+    questions: S.questions||[],
+    pilgrims: S.pilgrims||[],
+    completedSteps: S.completedSteps||{},
+    pilgrimPresence: S.pilgrimPresence||{},
+    guideLocation: S.guideLocation||{lat:21.4225,lng:39.8262},
+    activityResponses: S.activityResponses||{}
+  };
+  FB._writing = true;
+  FB.db.ref(path).set(payload).finally(()=>{ FB._writing=false; });
+}
+function fbWriteDebounced(){
+  if(!FB.enabled) return;
+  clearTimeout(FB._deb);
+  FB._deb = setTimeout(()=>fbWriteShared(), 350);
+}
+/* ===== /Firebase ===== */
+
 const T={fr:{appTitle:"Gestion Groupe Oumrah",guide:"Guide",pilgrims:"Pèlerins",userType:"Choisissez votre rôle",enterName:"Entrez votre nom complet",uploadPhoto:"Ajouter une photo (optionnel)",create:"Créer un groupe",join:"Rejoindre",enterCode:"Entrez le code du groupe",yourCode:"Votre code de groupe :",shareCode:"Partagez ce code avec vos pèlerins",rites:"Rites",detailedGuide:"Guide détaillé",messages:"Messages",rooms:"Chambres",map:"Carte",presence:"Présence",progress:"Progression",guideLocation:"Localisation Guide",activities:"Activités",questions:"Questions au Guide",steps:"Étapes",invocation:"Invocation",phonetic:"Phonétique",translation:"Traduction",counter:"Compteur",round:"Tour",trip:"Trajet",reset:"Réinitialiser",tawafComplete:"Tawaf terminé ! 7 tours accomplis ✓",saiComplete:"Sa'i terminé ! 7 trajets accomplis ✓",back:"← Retour",addMessage:"Nouveau message",messageTitle:"Titre du message",messageContent:"Contenu du message",send:"Envoyer",cancel:"Annuler",noMessages:"Aucun message pour le moment",addPilgrim:"Ajouter un pèlerin",pilgrimName:"Nom du pèlerin",roomNumber:"Numéro de chambre",floor:"Étage",save:"Enregistrer",noPilgrims:"Aucun pèlerin enregistré",room:"Chambre",online:"En ligne",offline:"Hors ligne",addActivity:"Nouvelle activité",activityName:"Nom de l'activité",activityLocation:"Lieu",activityTime:"Heure",noActivities:"Aucune activité planifiée",markPresence:"Marquer les présences",present:"Présent",absent:"Absent",presenceCount:"présents",delete:"Supprimer",myProgress:"Ma progression",completed:"✓ Terminé",notStarted:"Pas commencé",markComplete:"Marquer comme terminé",viewProgress:"Voir la progression",pilgrimProgress:"Progression du pèlerin",of:"sur",stepsCompleted:"étapes terminées",guideDistance:"Distance du guide",meters:"mètres",findGuide:"Localiser le guide",askQuestion:"Poser une question",questionPlaceholder:"Décrivez votre problème ou question...",yourQuestions:"Vos questions",noQuestions:"Aucune question posée",awaitingResponse:"En attente de réponse",answered:"Répondu",validatePresence:"Valider ma présence",presenceValidated:"✓ Présence validée",myActivities:"Mes activités",answer:"Répondre",response:"Réponse",pilgrimsQuestions:"Questions des pèlerins",groupName:"Nom du groupe",enterGroupName:"Ex: Oumrah Janvier 2026",sendWhatsApp:"Envoyer sur WhatsApp",codesSent:"Codes envoyés"},en:{appTitle:"Umrah Group Management",guide:"Guide",pilgrims:"Pilgrims",userType:"Choose your role",enterName:"Enter your full name",uploadPhoto:"Add photo (optional)",create:"Create group",join:"Join",enterCode:"Enter group code",yourCode:"Your group code:",shareCode:"Share this code with your pilgrims",rites:"Rites",detailedGuide:"Detailed Guide",messages:"Messages",rooms:"Rooms",map:"Map",presence:"Attendance",progress:"Progress",guideLocation:"Guide Location",activities:"Activities",questions:"Questions to Guide",steps:"Steps",invocation:"Invocation",phonetic:"Phonetic",translation:"Translation",counter:"Counter",round:"Round",trip:"Trip",reset:"Reset",tawafComplete:"Tawaf completed! 7 rounds done ✓",saiComplete:"Sa'i completed! 7 trips done ✓",back:"← Back",addMessage:"New message",messageTitle:"Message title",messageContent:"Message content",send:"Send",cancel:"Cancel",noMessages:"No messages yet",addPilgrim:"Add pilgrim",pilgrimName:"Pilgrim name",roomNumber:"Room number",floor:"Floor",save:"Save",noPilgrims:"No pilgrims registered",room:"Room",online:"Online",offline:"Offline",addActivity:"New activity",activityName:"Activity name",activityLocation:"Location",activityTime:"Time",noActivities:"No activities planned",markPresence:"Mark attendance",present:"Present",absent:"Absent",presenceCount:"present",delete:"Delete",myProgress:"My progress",completed:"✓ Completed",notStarted:"Not started",markComplete:"Mark as completed",viewProgress:"View progress",pilgrimProgress:"Pilgrim progress",of:"of",stepsCompleted:"steps completed",guideDistance:"Distance to guide",meters:"meters",findGuide:"Find guide",askQuestion:"Ask question",questionPlaceholder:"Describe your issue or question...",yourQuestions:"Your questions",noQuestions:"No questions asked",awaitingResponse:"Awaiting response",answered:"Answered",validatePresence:"Validate my presence",presenceValidated:"✓ Presence validated",myActivities:"My activities",answer:"Answer",response:"Response",pilgrimsQuestions:"Pilgrims questions",groupName:"Group name",enterGroupName:"Ex: Umrah January 2026",sendWhatsApp:"Send on WhatsApp",codesSent:"Codes sent"}};
+const RITE_ICONS=['🧕','🕋','🙏','🏃‍♂️','✂️'];
 const RITES={fr:[{id:1,title:"Ihram",description:"État de sacralisation avant d'entrer dans les lieux saints",steps:["Se purifier (ghusl) et porter les vêtements d'Ihram","Formuler l'intention (niyyah) pour la Oumrah","Réciter la Talbiyah"],dua:{arabic:"لَبَّيْكَ اللَّهُمَّ لَبَّيْكَ، لَبَّيْكَ لَا شَرِيكَ لَكَ لَبَّيْكَ، إِنَّ الْحَمْدَ وَالنِّعْمَةَ لَكَ وَالْمُلْكَ، لَا شَرِيكَ لَكَ",phonetic:"Labbayka Allāhumma labbayk, labbayka lā sharīka laka labbayk, inna al-ḥamda wa n-niʿmata laka wa l-mulk, lā sharīka lak",translation:"Me voici, Ô Allah, me voici. Me voici, Tu n'as pas d'associé, me voici. Certes la louange, la grâce et la royauté T'appartiennent. Tu n'as pas d'associé."}},{id:2,title:"Tawaf",description:"Sept circumambulations autour de la Kaaba",steps:["Commencer au niveau de la Pierre Noire (Hajar al-Aswad)","Effectuer 7 tours autour de la Kaaba dans le sens antihoraire","Toucher ou pointer la Pierre Noire à chaque tour si possible","Réciter les invocations pendant le Tawaf"],dua:{arabic:"سُبْحَانَ اللهِ وَالْحَمْدُ لِلَّهِ وَلَا إِلَهَ إِلَّا اللهُ وَاللهُ أَكْبَرُ وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللهِ",phonetic:"Subḥāna Llāh, wa l-ḥamdu li-Llāh, wa lā ilāha illā Llāh, wa Llāhu akbar, wa lā ḥawla wa lā quwwata illā bi-Llāh",translation:"Gloire à Allah, louange à Allah, il n'y a de divinité qu'Allah, Allah est le Plus Grand, il n'y a de force ni de puissance qu'en Allah."}},{id:3,title:"Prière de deux unités",description:"Prière derrière Maqam Ibrahim",steps:["Se diriger vers Maqam Ibrahim après le Tawaf","Accomplir deux rak'at (unités de prière)","Réciter sourate Al-Kafirun dans la 1ère rak'a","Réciter sourate Al-Ikhlas dans la 2ème rak'a"],dua:{arabic:"رَبَّنَا تَقَبَّلْ مِنَّا إِنَّكَ أَنْتَ السَّمِيعُ الْعَلِيمُ",phonetic:"Rabbanā taqabbal minnā innaka anta s-samīʿu l-ʿalīm",translation:"Notre Seigneur, accepte de nous, Tu es certes Celui qui entend et qui sait."}},{id:4,title:"Sa'i",description:"Sept allers-retours entre Safa et Marwa",steps:["Arriver au pied du mont Safa et réciter le verset","Monter sur Safa en regardant la Kaaba","Réciter le Takbir (3 fois)","Marcher vers Marwa (1er trajet)","Répéter jusqu'à compléter 7 trajets (fin à Marwa)"],dua:{arabic:"إِنَّ الصَّفَا وَالْمَرْوَةَ مِنْ شَعَائِرِ اللَّهِ فَمَنْ حَجَّ الْبَيْتَ أو اعْتَمَرَ فَلَا جُنَاحَ عَلَيْهِ أَنْ يَطَوَّفَ بِهِمَا وَمَنْ تَطَوَّعَ خَيْرًا فَإِنَّ اللَّهَ شَاكِرٌ عَلِيمٌ • اللهُ أَكْبَرُ، اللهُ أَكْبَرُ، اللهُ أَكْبَرُ",phonetic:"Inna-s-safa wa-l-marwata min cha'aa-iri Llahi, faman hadja-l-bayta awi 'tamara fala djounaaha 'alayhi an yattawwafa bihima, wa man ta tawwa'a khayran fa inna Allaha chaa kiroun 'alim • Allahou Akbar, Allahou Akbar, Allahou Akbar",translation:"AS-SAFA et AL-MARWA sont vraiment parmi les lieux sacrés d'ALLAH. Donc, quiconque fait le pèlerinage à la Maison (Sacrée) ou fait la OMRA ne commet pas de péché en faisant le va-et-vient entre ces deux monts. Et quiconque fait de son propre gré une bonne œuvre, alors ALLAH est Reconnaissant, Omniscient • Allah est le Plus Grand, Allah est le Plus Grand, Allah est le Plus Grand."}},{id:5,title:"Taqsir ou Halq",description:"Raccourcir ou raser les cheveux",steps:["Les hommes peuvent raser (Halq) ou raccourcir (Taqsir) leurs cheveux","Les femmes coupent l'équivalent d'une phalange de leurs cheveux","Ceci marque la fin de la Oumrah","L'état d'Ihram prend fin"],dua:{arabic:"الْحَمْدُ لِلَّهِ الَّذِي قَضَى عَنَّا نُسُكَنَا",phonetic:"Al-ḥamdu li-Llāhi lladhī qaḍā ʿannā nusukana",translation:"Louange à Allah qui nous a permis d'accomplir notre rite."}}],en:[{id:1,title:"Ihram",description:"State of consecration",steps:["Perform purification (ghusl)","Make intention (niyyah)","Recite the Talbiyah"],dua:{arabic:"لَبَّيْكَ اللَّهُمَّ لَبَّيْكَ، لَبَّيْكَ لَا شَرِيكَ لَكَ لَبَّيْكَ، إِنَّ الْحَمْدَ وَالنِّعْمَةَ لَكَ وَالْمُلْكَ، لَا شَرِيكَ لَكَ",phonetic:"Labbayka Allāhumma labbayk",translation:"Here I am, O Allah"}},{id:2,title:"Tawaf",description:"Seven circumambulations",steps:["Start at Black Stone","Perform 7 circles counterclockwise","Touch or point to Black Stone","Recite invocations"],dua:{arabic:"سُبْحَانَ اللهِ وَالْحَمْدُ لِلَّهِ وَلَا إِلَهَ إِلَّا اللهُ وَاللهُ أَكْبَرُ وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللهِ",phonetic:"Subḥāna Llāh",translation:"Glory be to Allah"}},{id:3,title:"Two units prayer",description:"Prayer behind Maqam Ibrahim",steps:["Go to Maqam Ibrahim","Perform two rak'at","Recite Surah Al-Kafirun","Recite Surah Al-Ikhlas"],dua:{arabic:"رَبَّنَا تَقَبَّلْ مِنَّا إِنَّكَ أَنْتَ السَّمِيعُ الْعَلِيمُ",phonetic:"Rabbanā taqabbal minnā",translation:"Our Lord, accept from us"}},{id:4,title:"Sa'i",description:"Seven trips between Safa and Marwa",steps:["Arrive at mount Safa and recite verse","Climb Safa facing Kaaba","Recite Takbir (3 times)","Walk to Marwa","Complete 7 trips"],dua:{arabic:"إِنَّ الصَّفَا وَالْمَرْوَةَ مِنْ شَعَائِرِ اللَّهِ فَمَنْ حَجَّ الْبَيْتَ أو اعْتَمَرَ فَلَا جُنَاحَ عَلَيْهِ أَنْ يَطَوَّفَ بِهِمَا وَمَنْ تَطَوَّعَ خَيْرًا فَإِنَّ اللَّهَ شَاكِرٌ عَلِيمٌ • اللهُ أَكْبَرُ، اللهُ أَكْبَرُ، اللهُ أَكْبَرُ",phonetic:"Inna-s-safa wa-l-marwata min cha'aa-iri Llahi • Allahou Akbar, Allahou Akbar, Allahou Akbar",translation:"Indeed, Safa and Marwa are sacred places • Allah is the Greatest (3x)"}},{id:5,title:"Taqsir or Halq",description:"Shortening or shaving hair",steps:["Men can shave or shorten","Women cut fingertip length","Marks end of Umrah","Ihram state ends"],dua:{arabic:"الْحَمْدُ لِلَّهِ الَّذِي قَضَى عَنَّا نُسُكَنَا",phonetic:"Al-ḥamdu li-Llāhi",translation:"Praise be to Allah"}}]};
 
 function selectLang(lang){S.lang=lang;localStorage.setItem('appLang',lang);S.showLangSelector=false;R()}
 function showReconnect(){S.showReconnect=!S.showReconnect;R()}
-function reconnectGuide(){const code=document.getElementById('guideCodeIn')?.value?.toUpperCase();if(!code)return alert('Entrez le code guide');const info=localStorage.getItem('guideGroup_'+code);if(!info)return alert('Code invalide');const data=JSON.parse(info);S.currentGroup=data.groupCode;S.groupCode=data.groupCode;S.groupName=data.groupName;S.guideCode=code;const pils=localStorage.getItem('pilgrims');if(pils)S.pilgrims=JSON.parse(pils).filter(p=>p.groupCode===data.groupCode);R()}
-function respondActivity(actId,status){if(!S.activityResponses[actId])S.activityResponses[actId]={};S.activityResponses[actId][S.pilgrimCode]={name:S.userName,status:status,time:Date.now()};localStorage.setItem('activityResponses',JSON.stringify(S.activityResponses));R()}
-function playAudio(rid){if(!S.audioState[rid])S.audioState[rid]={playing:false,loop:false,repeat:1,currentRepeat:0};const a=new Audio('https://download.quranicaudio.com/quran/abdur_rahmaan_as-sudays/001.mp3');window['audio'+rid]=a;a.onended=()=>{S.audioState[rid].currentRepeat++;if(S.audioState[rid].loop||S.audioState[rid].currentRepeat<S.audioState[rid].repeat){a.currentTime=0;a.play()}else{S.audioState[rid].playing=false;S.audioState[rid].currentRepeat=0}R()};a.play();S.audioState[rid].playing=true;R()}
-function toggleAudio(rid){const a=window['audio'+rid];if(!a)return;if(S.audioState[rid].playing){a.pause();S.audioState[rid].playing=false}else{a.play();S.audioState[rid].playing=true}R()}
-function toggleLoop(rid){S.audioState[rid].loop=!S.audioState[rid].loop;R()}
-function setRepeat(rid,n){S.audioState[rid].repeat=parseInt(n)||1;R()}
-function initDemo(){if(S.userType==='guide'&&S.currentGroup&&S.pilgrims.length===0){S.pilgrims=[{id:1,name:'Ahmed Ben Ali',hotel:'Hilton Makkah',room:'205',code:'ABC123',groupCode:S.currentGroup,photo:null,online:true,lat:21.4225,lng:39.8262,completedSteps:{1:true,2:true,3:false,4:false,5:false}},{id:2,name:'Fatima Zahra',hotel:'Hilton Makkah',room:'207',code:'DEF456',groupCode:S.currentGroup,photo:null,online:true,lat:21.4235,lng:39.8272,completedSteps:{1:true,2:true,3:true,4:true,5:false}},{id:3,name:'Mohammed Ibrahim',hotel:'Swissotel Makkah',room:'305',code:'GHI789',groupCode:S.currentGroup,photo:null,online:false,lat:21.4215,lng:39.8252,completedSteps:{1:true,2:false,3:false,4:false,5:false}},{id:4,name:'Khadija Nour',hotel:'Swissotel Makkah',room:'308',code:'JKL012',groupCode:S.currentGroup,photo:null,online:true,lat:21.4240,lng:39.8280,completedSteps:{1:true,2:true,3:true,4:true,5:true}}];localStorage.setItem('pilgrims',JSON.stringify(S.pilgrims));S.messages=[{id:1,title:'Départ demain matin',content:'Rendez-vous à 6h dans le lobby',time:new Date(Date.now()-3600000)}];S.activities=[{id:1,name:'Visite Mosquée du Prophète',location:'Médine',time:'09:00',presence:{}},{id:2,name:'Tawaf de groupe',location:'Masjid al-Haram',time:'14:00',presence:{}}];S.questions=[{id:1,pilgrimName:'Ahmed Ben Ali',pilgrimId:1,question:'Je ne trouve pas mon groupe pour le Tawaf',time:new Date(Date.now()-1800000),answered:false,response:null}]}}
+function reconnectGuide(){fbInitIfPossible();const code=document.getElementById('guideCodeIn')?.value?.toUpperCase();if(!code)return alert('Entrez le code guide');const info=localStorage.getItem('guideGroup_'+code);if(!info)return alert('Code invalide');const data=JSON.parse(info);S.currentGroup=data.groupCode;fbInitIfPossible();fbReadOnce();fbListen();S.groupCode=data.groupCode;S.groupName=data.groupName;S.guideCode=code;const pils=localStorage.getItem('pilgrims');if(pils)S.pilgrims=JSON.parse(pils).filter(p=>p.groupCode===data.groupCode);R()}
+function respondActivity(actId,status){if(!S.activityResponses[actId])S.activityResponses[actId]={};fbWriteDebounced();S.activityResponses[actId][S.pilgrimCode]={name:S.userName,status:status,time:Date.now()};fbWriteDebounced();localStorage.setItem('activityResponses',JSON.stringify(S.activityResponses));fbWriteDebounced();R()}
+function ensureAudioState(key){
+  if(!S.audioState) S.audioState={};
+  if(!S.audioState[key]) S.audioState[key]={playing:false,loop:false,repeat:1,currentRepeat:0,rate:1.0,progress:0};
+  return S.audioState[key];
+}
+function getAudioUrlForKey(key){
+  // TODO: remplacer par vos audios réels si vous en avez. Placeholder actuel.
+  return 'https://download.quranicaudio.com/quran/abdur_rahmaan_as-sudays/001.mp3';
+}
+function playAudio(key){
+  const st=ensureAudioState(key);
+  // stop previous instance if any
+  try{
+    const prev=window['audio'+key];
+    if(prev){ prev.pause(); prev.currentTime=0; }
+  }catch(e){}
+  const a=new Audio(getAudioUrlForKey(key));
+  a.playbackRate=st.rate||1.0;
+  a.loop=!!st.loop;
+  window['audio'+key]=a;
+
+  a.ontimeupdate=()=>{
+    if(a.duration && isFinite(a.duration)){
+      st.progress=a.currentTime/a.duration;
+      R(false);
+    }
+  };
+  a.onended=()=>{
+    st.currentRepeat++;
+    if(st.loop || st.currentRepeat < (st.repeat||1)){
+      a.currentTime=0;
+      a.play();
+      return;
+    }
+    st.playing=false;
+    st.currentRepeat=0;
+    st.progress=0;
+    R();
+  };
+
+  a.play();
+  st.playing=true;
+  R();
+}
+function toggleAudio(key){
+  const st=ensureAudioState(key);
+  const a=window['audio'+key];
+  if(!a){ playAudio(key); return; }
+  if(st.playing){
+    a.pause();
+    st.playing=false;
+  }else{
+    a.play();
+    st.playing=true;
+  }
+  R();
+}
+function toggleRate(key){
+  const st=ensureAudioState(key);
+  const rates=[1.0,1.15,1.3];
+  const cur=Number(st.rate||1.0);
+  const idx=rates.indexOf(cur);
+  st.rate=rates[(idx+1)%rates.length];
+  const a=window['audio'+key];
+  if(a) a.playbackRate=st.rate;
+  R();
+}
+function toggleLoop(key){
+  const st=ensureAudioState(key);
+  st.loop=!st.loop;
+  const a=window['audio'+key];
+  if(a) a.loop=st.loop;
+  R();
+}
+function setRepeat(key,n){
+  const st=ensureAudioState(key);
+  st.repeat=parseInt(n)||1;
+  R();
+}
+function renderInvocations(r,isP,t){
+  const duas = Array.isArray(r.dua) ? r.dua : [r.dua];
+  return duas.map((d,idx)=>{
+    const key = `${r.id}_${idx}`;
+    return `
+      <div class="dua-box"><div class="arabic-text">${d.arabic||''}</div></div>
+      ${isP?`<div class="audio-player" style="margin:12px 0 16px 0;border:3px solid #3b82f6">
+        <div class="audio-controls">
+          <button class="audio-btn" onclick="toggleLoop('${key}')">🔁</button>
+          ${S.audioState[key]?.playing?`<button class="audio-btn" onclick="toggleAudio('${key}')">⏸</button>`:`<button class="audio-btn" onclick="playAudio('${key}')">▶</button>`}
+          <button class="audio-btn" onclick="toggleRate('${key}')" style="font-size:14px">${(S.audioState[key]?.rate||1.0).toFixed(2)}x</button>
+        </div>
+      </div>`:''}
+      <div class="dua-box"><span class="label">${t.phonetic}</span><div class="phonetic-text">${d.phonetic||''}</div></div>
+      <div class="dua-box"><span class="label">${t.translation}</span><div class="translation-text">${d.translation||''}</div></div>
+    `;
+  }).join('');
+}
+
+function toggleLoop(key){
+if(!S.audioState[key])S.audioState[key]={playing:false,loop:false,repeat:1,currentRepeat:0,rate:1.0};
+S.audioState[key].loop=!S.audioState[key].loop;
+R()
+}
+function setRepeat(key,n){
+if(!S.audioState[key])S.audioState[key]={playing:false,loop:false,repeat:1,currentRepeat:0,rate:1.0};
+S.audioState[key].repeat=parseInt(n)||1;
+R()
+}
+function initDemo(){if(S.userType==='guide'&&S.currentGroup&&S.pilgrims.length===0){S.pilgrims=[{id:1,name:'Ahmed Ben Ali',hotel:'Hilton Makkah',room:'205',code:'ABC123',groupCode:S.currentGroup,photo:null,online:true,lat:21.4225,lng:39.8262,completedSteps:{1:true,2:true,3:false,4:false,5:false}},{id:2,name:'Fatima Zahra',hotel:'Hilton Makkah',room:'207',code:'DEF456',groupCode:S.currentGroup,photo:null,online:true,lat:21.4235,lng:39.8272,completedSteps:{1:true,2:true,3:true,4:true,5:false}},{id:3,name:'Mohammed Ibrahim',hotel:'Swissotel Makkah',room:'305',code:'GHI789',groupCode:S.currentGroup,photo:null,online:false,lat:21.4215,lng:39.8252,completedSteps:{1:true,2:false,3:false,4:false,5:false}},{id:4,name:'Khadija Nour',hotel:'Swissotel Makkah',room:'308',code:'JKL012',groupCode:S.currentGroup,photo:null,online:true,lat:21.4240,lng:39.8280,completedSteps:{1:true,2:true,3:true,4:true,5:true}}];localStorage.setItem('pilgrims',JSON.stringify(S.pilgrims));fbWriteDebounced();S.messages=[{id:1,title:'Départ demain matin',content:'Rendez-vous à 6h dans le lobby',time:new Date(Date.now()-3600000)}];S.activities=[{id:1,name:'Visite Mosquée du Prophète',location:'Médine',time:'09:00',presence:{}},{id:2,name:'Tawaf de groupe',location:'Masjid al-Haram',time:'14:00',presence:{}}];S.questions=[{id:1,pilgrimName:'Ahmed Ben Ali',pilgrimId:1,question:'Je ne trouve pas mon groupe pour le Tawaf',time:new Date(Date.now()-1800000),answered:false,response:null}]}}
 function fmtTime(d){const n=new Date(),diff=n-d,m=Math.floor(diff/60000),h=Math.floor(m/60),day=Math.floor(h/24);if(m<1)return "à l'instant";if(m<60)return `il y a ${m} min`;if(h<24)return `il y a ${h}h`;return `il y a ${day}j`}
 function calcProg(c){if(!c)return 0;const comp=Object.values(c).filter(v=>v).length;return Math.round((comp/5)*100)}
 function getCnt(c){if(!c)return 0;return Object.values(c).filter(v=>v).length}
 function calcDist(lat1,lng1,lat2,lng2){const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180,a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2),c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));return Math.round(R*c)}
+
+function storageKeyGuideLoc(){return 'guideLoc:'+ (S.currentGroup||'');}
+function storageKeyPilLoc(code){return 'pilLoc:'+(S.currentGroup||'')+':'+code;}
+function loadGuideLoc(){try{const v=localStorage.getItem(storageKeyGuideLoc());if(v){S.guideLocation=JSON.parse(v);}}catch(e){}}
+function saveGuideLoc(){try{localStorage.setItem(storageKeyGuideLoc(),JSON.stringify(S.guideLocation));}catch(e){}}
+
+function updateGuideLocation(){
+  if(!navigator.geolocation){alert('GPS non disponible');return;}
+  navigator.geolocation.getCurrentPosition((pos)=>{
+    S.guideLocation={lat:pos.coords.latitude,lng:pos.coords.longitude,ts:Date.now()};
+    fbWriteDebounced();saveGuideLoc();
+    R();
+  },(err)=>alert('GPS: '+err.message),{enableHighAccuracy:true,timeout:12000});
+}
+
+function updatePilgrimLocation(){
+  if(!navigator.geolocation){alert('GPS non disponible');return;}
+  navigator.geolocation.getCurrentPosition((pos)=>{
+    const loc={lat:pos.coords.latitude,lng:pos.coords.longitude,ts:Date.now()};
+    localStorage.setItem(storageKeyPilLoc(S.pilgrimCode||S.userName),JSON.stringify(loc));
+    // also write into pilgrim record if present
+    try{
+      const stored=localStorage.getItem('pilgrims');
+      if(stored){
+        const arr=JSON.parse(stored);
+        const p=arr.find(x=>x.code===S.pilgrimCode);
+        if(p){p.lat=loc.lat;p.lng=loc.lng;p.locTs=loc.ts;p.online=true;localStorage.setItem('pilgrims',JSON.stringify(arr));}
+      }
+    }catch(e){}
+    R();
+  },(err)=>alert('GPS: '+err.message),{enableHighAccuracy:true,timeout:12000});
+}
+
+function getPilgrimLoc(code){
+  try{
+    const v=localStorage.getItem(storageKeyPilLoc(code));
+    if(v) return JSON.parse(v);
+  }catch(e){}
+  // fallback: from pilgrim record
+  try{
+    const stored=localStorage.getItem('pilgrims');
+    if(stored){
+      const arr=JSON.parse(stored);
+      const p=arr.find(x=>x.code===code);
+      if(p && p.lat && p.lng) return {lat:p.lat,lng:p.lng,ts:p.locTs||null};
+    }
+  }catch(e){}
+  return null;
+}
 function getInit(n){return n.split(' ').map(x=>x[0]).join('').toUpperCase().substring(0,2)}
 function selType(t){S.userType=t;R()}
 function chLang(l){S.lang=l;R()}
-function goBack(){S.userType=null;S.currentGroup=null;S.groupCode='';S.userName='';S.userPhoto=null;S.viewPilgrimProgress=null;S.viewQuestions=false;R()}
-function createGrp(){const n=document.getElementById('groupNameIn')?.value;if(!n){alert('Veuillez entrer un nom pour le groupe');return}const existingPilgrims=localStorage.getItem('pilgrims');let c;if(!existingPilgrims||JSON.parse(existingPilgrims).length===0){c='DEMO01'}else{c=Math.random().toString(36).substring(2,8).toUpperCase()}const guideCode='G'+Math.random().toString(36).substring(2,9).toUpperCase();S.currentGroup=c;S.groupCode=c;S.groupName=n;S.guideCode=guideCode;localStorage.setItem('guideGroup_'+guideCode,JSON.stringify({groupCode:c,groupName:n,guideCode:guideCode,createdAt:Date.now()}));const storedPilgrims=localStorage.getItem('pilgrims');if(storedPilgrims){S.pilgrims=JSON.parse(storedPilgrims).filter(p=>p.groupCode===c)}initDemo();R()}
-function joinGrp(){const c=document.getElementById('codeIn').value;if(c&&c.length>=6){const code=c.toUpperCase();const storedPilgrims=localStorage.getItem('pilgrims');if(storedPilgrims){S.pilgrims=JSON.parse(storedPilgrims)}const pilgrim=S.pilgrims.find(p=>p.code===code);if(pilgrim){S.userName=pilgrim.name;S.userHotel=pilgrim.hotel||'';S.userRoom=pilgrim.room||'';S.userPhoto=pilgrim.photo||null;S.pilgrimCode=code;S.currentGroup=pilgrim.groupCode;S.completedSteps=pilgrim.completedSteps||{1:false,2:false,3:false,4:false,5:false};S.pilgrimPresence={};S.activities=[{id:1,name:'Visite Mosquée du Prophète',location:'Médine',time:'09:00'},{id:2,name:'Tawaf de groupe',location:'Masjid al-Haram',time:'14:00'}];R()}else{alert('Code invalide. Veuillez vérifier votre code.')}}}
+function goBack(){S.userType=null;S.currentGroup=null;fbInitIfPossible();fbReadOnce();fbListen();S.groupCode='';S.userName='';S.userPhoto=null;S.viewPilgrimProgress=null;S.viewQuestions=false;R()}
+function createGrp(){fbInitIfPossible();const n=document.getElementById('groupNameIn')?.value;if(!n){alert('Veuillez entrer un nom pour le groupe');return}const existingPilgrims=localStorage.getItem('pilgrims');let c;if(!existingPilgrims||JSON.parse(existingPilgrims).length===0){c='DEMO01'}else{c=Math.random().toString(36).substring(2,8).toUpperCase()}const guideCode='G'+Math.random().toString(36).substring(2,9).toUpperCase();S.currentGroup=c;fbInitIfPossible();fbReadOnce();fbListen();S.groupCode=c;S.groupName=n;S.guideCode=guideCode;localStorage.setItem('guideGroup_'+guideCode,JSON.stringify({groupCode:c,groupName:n,guideCode:guideCode,createdAt:Date.now()}));const storedPilgrims=localStorage.getItem('pilgrims');if(storedPilgrims){S.pilgrims=JSON.parse(storedPilgrims).filter(p=>p.groupCode===c)}initDemo();R()}
+function joinGrp(){fbInitIfPossible();const c=document.getElementById('codeIn').value;if(c&&c.length>=6){const code=c.toUpperCase();const storedPilgrims=localStorage.getItem('pilgrims');if(storedPilgrims){S.pilgrims=JSON.parse(storedPilgrims)}const pilgrim=S.pilgrims.find(p=>p.code===code);if(pilgrim){S.userName=pilgrim.name;S.userHotel=pilgrim.hotel||'';S.userRoom=pilgrim.room||'';S.userPhoto=pilgrim.photo||null;S.pilgrimCode=code;S.currentGroup=pilgrim.groupCode;fbInitIfPossible();fbReadOnce();fbListen();S.completedSteps=pilgrim.completedSteps||{1:false,2:false,3:false,4:false,5:false};S.pilgrimPresence={};S.activities=[{id:1,name:'Visite Mosquée du Prophète',location:'Médine',time:'09:00'},{id:2,name:'Tawaf de groupe',location:'Masjid al-Haram',time:'14:00'}];R()}else{alert('Code invalide. Veuillez vérifier votre code.')}}}
 function hdlPhoto(e){const f=e.target.files[0];if(f){const r=new FileReader();r.onload=x=>{S.userPhoto=x.target.result;if(S.userType==='pilgrim'&&S.pilgrimCode){const storedPilgrims=localStorage.getItem('pilgrims');if(storedPilgrims){S.pilgrims=JSON.parse(storedPilgrims)}const pilgrim=S.pilgrims.find(p=>p.code===S.pilgrimCode);if(pilgrim){pilgrim.photo=x.target.result;localStorage.setItem('pilgrims',JSON.stringify(S.pilgrims))}}R()};r.readAsDataURL(f)}}
 function togRite(i){S.expandedRite=S.expandedRite===i?null:i;R()}
 function compStp(i){if(S.userType==='pilgrim'){S.completedSteps[i]=!S.completedSteps[i];R()}}
@@ -138,11 +473,11 @@ function shwEditPil(id){S.editPilgrimId=id;S.showEditPilgrim=true;R()}
 function hidEditPil(){S.showEditPilgrim=false;S.editPilgrimId=null;R()}
 function updatePil(){const h=document.getElementById('editH').value,r=document.getElementById('editR').value;if(S.editPilgrimId){const storedPilgrims=localStorage.getItem('pilgrims');if(storedPilgrims){S.pilgrims=JSON.parse(storedPilgrims)}const pilgrim=S.pilgrims.find(p=>p.id===S.editPilgrimId);if(pilgrim){pilgrim.hotel=h||'';pilgrim.room=r||'';localStorage.setItem('pilgrims',JSON.stringify(S.pilgrims))}S.showEditPilgrim=false;S.editPilgrimId=null;R()}}
 function sendWhatsApp(pilgrim){const msg=`🕋 *${S.groupName}*%0A%0ASalam ${pilgrim.name},%0A%0AVotre code personnel pour l'application Oumrah :%0A*${pilgrim.code}*%0A%0AHôtel: ${pilgrim.hotel||'À confirmer'}%0AChambre: ${pilgrim.room||'À confirmer'}%0A%0AUtilisez ce code pour vous connecter à l'application.%0A%0AQu'Allah accepte votre Oumrah ! 🤲`;window.open(`https://wa.me/?text=${msg}`,'_blank')}
-function savPil(){const n=document.getElementById('pilN').value,h=document.getElementById('pilH').value,r=document.getElementById('pilR').value;if(n){const code=Math.random().toString(36).substring(2,8).toUpperCase();S.pilgrims.push({id:Date.now(),name:n,hotel:h||'',room:r||'',code:code,groupCode:S.currentGroup,photo:null,online:false,lat:21.4225+Math.random()*0.01,lng:39.8262+Math.random()*0.01,completedSteps:{1:false,2:false,3:false,4:false,5:false}});localStorage.setItem('pilgrims',JSON.stringify(S.pilgrims));S.showAddPilgrim=false;R()}}
+function savPil(){const n=document.getElementById('pilN').value,h=document.getElementById('pilH').value,r=document.getElementById('pilR').value;if(n){const code=Math.random().toString(36).substring(2,8).toUpperCase();S.pilgrims.push({id:Date.now(),name:n,hotel:h||'',room:r||'',code:code,groupCode:S.currentGroup,photo:null,online:false,lat:21.4225+Math.random()*0.01,lng:39.8262+Math.random()*0.01,completedSteps:{1:false,2:false,3:false,4:false,5:false}});localStorage.setItem('pilgrims',JSON.stringify(S.pilgrims));fbWriteDebounced();S.showAddPilgrim=false;R()}}
 function delPil(i){S.pilgrims=S.pilgrims.filter(p=>p.id!==i);R()}
 function shwAct(){S.showAddActivity=true;R()}
 function hidAct(){S.showAddActivity=false;R()}
-function savAct(){const n=document.getElementById('actN').value,l=document.getElementById('actL').value,d=document.getElementById('actD').value,t=document.getElementById('actT').value;if(n&&l&&d&&t){S.activities.push({id:Date.now(),name:n,location:l,date:d,time:t,presence:{}});S.showAddActivity=false;R()}}
+function savAct(){const n=document.getElementById('actN').value,l=document.getElementById('actL').value,d=document.getElementById('actD').value,t=document.getElementById('actT').value;if(n&&l&&d&&t){S.activities.push({id:Date.now(),name:n,location:l,date:d,time:t,presence:{}});fbWriteDebounced();S.showAddActivity=false;R()}}
 function delAct(i){S.activities=S.activities.filter(a=>a.id!==i);R()}
 function togPres(a,p){const act=S.activities.find(x=>x.id===a);if(act){if(!act.presence)act.presence={};act.presence[p]=!act.presence[p];R()}}
 function viewProg(i){S.viewPilgrimProgress=i;R()}
@@ -154,22 +489,82 @@ function R(){const app=document.getElementById('app'),L=S.lang,tr=T[L];if(S.show
 function rSelType(t){return `<div class="container"><div class="card"><div class="icon-circle"><svg width="32" height="32" fill="white" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div><h1>${t.appTitle}</h1><p style="text-align:center;margin-bottom:30px">${t.userType}</p><button class="btn-primary" onclick="selType('guide')">${t.guide}</button><button class="btn-secondary" onclick="selType('pilgrim')">${t.pilgrims}</button><div style="text-align:center;margin-top:20px"><select onchange="chLang(this.value)" style="width:auto;display:inline-block"><option value="fr" ${S.lang==='fr'?'selected':''}>Français</option><option value="en" ${S.lang==='en'?'selected':''}>English</option></select></div></div></div>`}
 function rJoin(t){return `<div class="container"><div class="card"><button class="btn-secondary" onclick="goBack()" style="margin-bottom:20px">${t.back}</button><h2>${S.userType==='guide'?t.create:t.join}</h2>${S.userType==='guide'?`${S.showReconnect?`<input type="text" id="guideCodeIn" placeholder="Code guide (G...)" style="text-transform:uppercase;margin:15px 0"><button class="btn-primary" onclick="reconnectGuide()">Se reconnecter</button><button class="btn-secondary" onclick="showReconnect()">Annuler</button>`:`<input type="text" id="groupNameIn" placeholder="${t.enterGroupName}" style="margin:15px 0"><button class="btn-primary" onclick="createGrp()">Créer nouveau groupe</button><button class="btn-secondary" onclick="showReconnect()">Se reconnecter</button>`}`:`<p style="text-align:center;margin-bottom:20px;color:#6b7280">Entrez le code personnel fourni par votre guide</p><input type="text" id="codeIn" placeholder="${t.enterCode}" maxlength="6" style="text-transform:uppercase;text-align:center;font-size:24px;font-weight:bold"><button class="btn-primary" onclick="joinGrp()">${t.join}</button>`}</div></div>`}
 function rQView(t){const un=S.questions.filter(q=>!q.answered).length;return `<div class="container"><div class="card"><button class="btn-secondary" onclick="hidQs()" style="margin-bottom:20px">${t.back}</button><h2>${t.pilgrimsQuestions} ${un>0?`<span class="badge badge-warning">${un}</span>`:''}</h2>${S.questions.length===0?`<p style="text-align:center;color:#6b7280;padding:40px 0">${t.noQuestions}</p>`:S.questions.map(q=>`<div class="question-item"><div class="flex-between" style="margin-bottom:10px"><h3 style="margin:0">${q.pilgrimName}</h3>${q.answered?'<span class="badge badge-success">'+t.answered+'</span>':'<span class="badge badge-warning">'+t.awaitingResponse+'</span>'}</div><p style="margin:10px 0;padding:10px;background:white;border-radius:8px">${q.question}</p><p class="message-time">${fmtTime(q.time)}</p>${q.answered?`<div class="question-response"><strong>${t.response}:</strong> ${q.response}</div>`:`<div style="margin-top:15px"><textarea id="rsp-${q.id}" placeholder="${t.response}..." style="margin-bottom:10px"></textarea><button class="btn-primary btn-small" onclick="ansQ(${q.id})">${t.answer}</button></div>`}</div>`).join('')}</div></div>`}
-function rProgView(t,L){const p=S.pilgrims.find(x=>x.id===S.viewPilgrimProgress);if(!p)return '';const rts=RITES[L],prog=calcProg(p.completedSteps),cnt=getCnt(p.completedSteps);return `<div class="container"><div class="card"><button class="btn-secondary" onclick="closeProg()" style="margin-bottom:20px">${t.back}</button><h2>${t.pilgrimProgress}</h2><h3 style="text-align:center;color:#059669;margin-bottom:20px">${p.name}</h3><div class="progress-bar"><div class="progress-fill" style="width:${prog}%"></div></div><p class="progress-text">${cnt} ${t.of} 5 ${t.stepsCompleted} (${prog}%)</p><div style="margin-top:30px">${rts.map((r,i)=>{const done=p.completedSteps&&p.completedSteps[r.id];return `<div class="rite-item ${done?'completed':''}"><div class="rite-header"><div style="display:flex;align-items:center;flex:1"><div class="rite-number ${done?'completed':''}">${i+1}</div><div style="flex:1"><h3 style="margin:0">${r.title}</h3><p style="margin:5px 0 0 0;font-size:14px;color:${done?'#059669':'#6b7280'}">${done?t.completed:t.notStarted}</p></div></div>${done?'<span class="checkmark">✓</span>':''}</div></div>`}).join('')}</div></div></div>`}
+function rProgView(t,L){const p=S.pilgrims.find(x=>x.id===S.viewPilgrimProgress);if(!p)return '';const rts=RITES[L],prog=calcProg(p.completedSteps),cnt=getCnt(p.completedSteps);return `<div class="container"><div class="card"><button class="btn-secondary" onclick="closeProg()" style="margin-bottom:20px">${t.back}</button><h2>${t.pilgrimProgress}</h2><h3 style="text-align:center;color:#059669;margin-bottom:20px">${p.name}</h3><div class="progress-bar"><div class="progress-fill" style="width:${prog}%"></div></div><p class="progress-text">${cnt} ${t.of} 5 ${t.stepsCompleted} (${prog}%)</p><div style="margin-top:30px">${rts.map((r,i)=>{const done=p.completedSteps&&p.completedSteps[r.id];return `<div class="rite-item ${done?'completed':''}"><div class="rite-header"><div style="display:flex;align-items:center;flex:1"><div class="rite-number ${done?'completed':''}">${RITE_ICONS[i]||"🕌"}</div><div style="flex:1"><h3 style="margin:0">${r.title}</h3><p style="margin:5px 0 0 0;font-size:14px;color:${done?'#059669':'#6b7280'}">${done?t.completed:t.notStarted}</p></div></div>${done?'<span class="checkmark">✓</span>':''}</div></div>`}).join('')}</div></div></div>`}
 function rMain(t,L){const rts=RITES[L];if(S.userType==='pilgrim'&&S.pilgrimCode){const storedPilgrims=localStorage.getItem('pilgrims');if(storedPilgrims){const allPilgrims=JSON.parse(storedPilgrims);const currentPilgrim=allPilgrims.find(p=>p.code===S.pilgrimCode);if(currentPilgrim){S.userHotel=currentPilgrim.hotel||'';S.userRoom=currentPilgrim.room||'';S.userPhoto=currentPilgrim.photo||null}}}let hdr='';if(S.userType==='pilgrim'){const prog=calcProg(S.completedSteps),init=getInit(S.userName);hdr=`<div class="profile-section"><div class="profile-photo">${S.userPhoto?`<img src="${S.userPhoto}" alt="${S.userName}">`
 
-:init}</div><h2 style="margin:0 0 5px 0;text-align:center">${S.userName}</h2>${S.userHotel||S.userRoom?`<p style="text-align:center;font-size:14px;color:#047857;margin:5px 0 10px 0;font-weight:500">${S.userHotel?`🏨 ${S.userHotel}`:''} ${S.userRoom?`• 🚪 Chambre ${S.userRoom}`:''}</p>`:''}<label for="photoUpload" class="btn-secondary btn-small" style="cursor:pointer;display:inline-block;margin:10px auto">📸 ${S.userPhoto?'Changer':'Ajouter'} photo</label><input type="file" id="photoUpload" accept="image/*" onchange="hdlPhoto(event)" style="display:none"><div class="progress-bar" style="margin:10px 0"><div class="progress-fill" style="width:${prog}%"></div></div><p style="text-align:center;font-size:14px;font-weight:600;color:#059669;margin:0">${getCnt(S.completedSteps)} / 5 ${t.stepsCompleted}</p><button class=\"btn-secondary btn-small\" onclick=\"goBack()\" style=\"margin:10px auto;display:block\">🚪 Se déconnecter</button></div>`}else{const unQ=S.questions.filter(q=>!q.answered).length;hdr=`<h1 style="margin-bottom:5px">${S.groupName||t.appTitle}</h1><p style="text-align:center;color:#6b7280">${t.guide}</p>${unQ>0?`<div style="text-align:center;margin-top:15px"><button class="btn-warning btn-small" onclick="shwQs()">${t.questions} <span class="badge badge-warning" style="margin-left:5px">${unQ}</span></button></div>`:''}`}let tabs='';if(S.userType==='guide'){tabs=`<button class="tab ${S.activeTab==='rites'?'active':''}" onclick="S.activeTab='rites';R()">${t.rites}</button><button class="tab ${S.activeTab==='progress'?'active':''}" onclick="S.activeTab='progress';R()">${t.progress}</button><button class="tab ${S.activeTab==='messages'?'active':''}" onclick="S.activeTab='messages';R()">${t.messages}</button><button class="tab ${S.activeTab==='rooms'?'active':''}" onclick="S.activeTab='rooms';R()">${t.rooms}</button><button class="tab ${S.activeTab==='map'?'active':''}" onclick="S.activeTab='map';R()">${t.map}</button><button class="tab ${S.activeTab==='presence'?'active':''}" onclick="S.activeTab='presence';R()">${t.presence}</button>`}else{tabs=`<button class="tab ${S.activeTab==='rites'?'active':''}" onclick="S.activeTab='rites';R()">${t.rites}</button><button class="tab ${S.activeTab==='detailed'?'active':''}" onclick="S.activeTab='detailed';R()">${t.detailedGuide}</button><button class="tab ${S.activeTab==='guide'?'active':''}" onclick="S.activeTab='guide';R()">${t.guideLocation}</button><button class="tab ${S.activeTab==='activities'?'active':''}" onclick="S.activeTab='activities';R()">${t.activities}</button><button class="tab ${S.activeTab==='questions'?'active':''}" onclick="S.activeTab='questions';R()">${t.questions}</button>`}return `<div class="header">${hdr}${S.userType==='guide'?`<div style=\"background:#f0fdf4;padding:15px;border-radius:10px;margin:10px 20px\"><p style=\"text-align:center;font-size:12px;color:#047857;margin:0 0 5px 0;font-weight:600\">Code Guide</p><p style=\"text-align:center;font-size:20px;font-weight:bold;color:#059669;font-family:monospace;margin:0\">${S.guideCode||'...'}</p><p style=\"text-align:center;font-size:11px;color:#6b7280;margin:5px 0 0 0\">Conservez ce code pour vous reconnecter</p></div><button class=\"btn-secondary btn-small\" onclick=\"goBack()\" style=\"margin:10px auto;display:block\">🚪 Se déconnecter</button>`:''}</div><div class="tab-bar">${tabs}</div><div class="container">${rTab(t,L,rts)}</div>`}
+:init}</div><h2 style="margin:0 0 5px 0;text-align:center">${S.userName}</h2>${S.userHotel||S.userRoom?`<p style="text-align:center;font-size:14px;color:#047857;margin:5px 0 10px 0;font-weight:500">${S.userHotel?`🏨 ${S.userHotel}`:''} ${S.userRoom?`• 🚪 Chambre ${S.userRoom}`:''}</p>`:''}<label for="photoUpload" class="btn-secondary btn-small" style="cursor:pointer;display:inline-block;margin:10px auto">📸 ${S.userPhoto?'Changer':'Ajouter'} photo</label><input type="file" id="photoUpload" accept="image/*" onchange="hdlPhoto(event)" style="display:none"><div class="progress-bar" style="margin:10px 0"><div class="progress-fill" style="width:${prog}%"></div></div><p style="text-align:center;font-size:14px;font-weight:600;color:#059669;margin:0">${getCnt(S.completedSteps)} / 5 ${t.stepsCompleted}</p><button class=\"btn-secondary btn-small\" onclick=\"goBack()\" style=\"margin:10px auto;display:block\">🚪 Se déconnecter</button></div>`}else{const unQ=S.questions.filter(q=>!q.answered).length;hdr=`<h1 style="margin-bottom:5px">${S.groupName||t.appTitle}</h1><p style="text-align:center;color:#6b7280">${t.guide}</p>${unQ>0?`<div style="text-align:center;margin-top:15px"><button class="btn-warning btn-small" onclick="shwQs()">${t.questions} <span class="badge badge-warning" style="margin-left:5px">${unQ}</span></button></div>`:''}`}let tabs='';if(S.userType==='guide'){tabs=`<button class="tab ${S.activeTab==='rites'?'active':''}" onclick="S.activeTab='rites';R()">${t.rites}</button><button class="tab ${S.activeTab==='progress'?'active':''}" onclick="S.activeTab='progress';R()">${t.progress}</button><button class="tab ${S.activeTab==='messages'?'active':''}" onclick="S.activeTab='messages';R()">${t.messages}</button><button class="tab ${S.activeTab==='rooms'?'active':''}" onclick="S.activeTab='rooms';R()">${t.rooms}</button><button class="tab ${S.activeTab==='map'?'active':''}" onclick="S.activeTab='map';R()">${t.map}</button><button class="tab ${S.activeTab==='presence'?'active':''}" onclick="S.activeTab='presence';R()">${t.presence}</button>`}else{tabs=`<button class="tab ${S.activeTab==='rites'?'active':''}" onclick="S.activeTab='rites';R()">${t.rites}</button><button class="tab ${S.activeTab==='detailed'?'active':''}" onclick="S.activeTab='detailed';R()">${t.detailedGuide}</button><button class="tab ${S.activeTab==='guide'?'active':''}" onclick="S.activeTab='guide';R()">${t.guideLocation}</button><button class="tab ${S.activeTab==='activities'?'active':''}" onclick="S.activeTab='activities';R()">${t.activities}</button><button class="tab ${S.activeTab==='questions'?'active':''}" onclick="S.activeTab='questions';R()">${t.questions}</button>`}return `<div class="header"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px"><img src="logo.png" alt="Umrah Group" style="width:44px;height:44px;border-radius:14px;object-fit:cover;box-shadow:0 6px 14px rgba(0,0,0,0.12)"><div style="text-align:left"><div style="font-weight:800;color:#059669;font-size:16px;line-height:1.1">Umrah Group</div><div style="font-size:12px;color:#6b7280">Groupe • Rites • Suivi</div></div></div>${hdr}${S.userType==='guide'?`<div style=\"background:#f0fdf4;padding:15px;border-radius:10px;margin:10px 20px\"><p style=\"text-align:center;font-size:12px;color:#047857;margin:0 0 5px 0;font-weight:600\">Code Guide</p><p style=\"text-align:center;font-size:20px;font-weight:bold;color:#059669;font-family:monospace;margin:0\">${S.guideCode||'...'}</p><p style=\"text-align:center;font-size:11px;color:#6b7280;margin:5px 0 0 0\">Conservez ce code pour vous reconnecter</p></div><button class=\"btn-secondary btn-small\" onclick=\"goBack()\" style=\"margin:10px auto;display:block\">🚪 Se déconnecter</button>`:''}</div><div class="tab-bar">${tabs}</div><div class="container">${rTab(t,L,rts)}</div>`}
 function rTab(t,L,rts){switch(S.activeTab){case 'rites':return rRites(t,rts);case 'detailed':return rDetailed(t,L);case 'progress':return rProg(t);case 'guide':return rGuideLoc(t);case 'activities':return rMyActs(t);case 'questions':return rMyQs(t);case 'messages':return rMsgs(t);case 'rooms':return rRooms(t);case 'map':return rMap(t);case 'presence':return rPresence(t);default:return ''}}
-function rRites(t,rts){const isP=S.userType==='pilgrim';return `<h2 style="margin-bottom:20px">${t.rites}</h2>${rts.map((r,i)=>{const done=isP&&S.completedSteps&&S.completedSteps[r.id];return `<div class="rite-item ${done?'completed':''}"><div class="rite-header" onclick="togRite(${r.id})"><div style="display:flex;align-items:center;flex:1"><div class="rite-number ${done?'completed':''}">${i+1}</div><div style="flex:1"><h3 style="margin:0">${r.title}</h3><p style="margin:5px 0 0 0;font-size:14px">${r.description}</p>${isP?`<p style="margin:5px 0 0 0;font-size:13px;font-weight:600;color:${done?'#10b981':'#6b7280'}">${done?t.completed:t.notStarted}</p>`:''}</div></div><div style="font-size:24px;color:#059669">${S.expandedRite===r.id?'−':'+'}</div></div>${S.expandedRite===r.id?`<div class="rite-content"><h3>${t.steps}</h3><ol>${r.steps.map(s=>`<li>${s}</li>`).join('')}</ol><h3 style="margin-top:20px">${t.invocation}</h3><div class="dua-box"><div class="arabic-text">${r.dua.arabic}</div></div><div class="dua-box"><span class="label">${t.phonetic}</span><div class="phonetic-text">${r.dua.phonetic}</div></div><div class="dua-box"><span class="label">${t.translation}</span><div class="translation-text">${r.dua.translation}</div></div>${isP?`<div class="audio-player" style="margin:20px 0;border:3px solid #3b82f6"><div class="audio-text">${r.dua.arabic}</div><div class="audio-controls"><button class="audio-btn" onclick="toggleLoop(${r.id})">🔁</button>${S.audioState[r.id]?.playing?`<button class="audio-btn" onclick="toggleAudio(${r.id})">⏸</button>`:`<button class="audio-btn" onclick="playAudio(${r.id})">▶</button>`}<button class="audio-btn" style="font-size:14px">1.0x</button></div><div class="audio-progress"><div class="audio-progress-fill"></div></div></div>`:''}${isP&&r.id!==2&&r.id!==4?`<div style="margin-top:20px"><button class="${done?'btn-completed':'btn-success'}" onclick="compStp(${r.id})">${done?t.completed:t.markComplete}</button></div>`:''}${r.id===2?`<div style="margin-top:20px;background:white;padding:20px;border-radius:15px;border:2px solid #059669"><h3 style="text-align:center">${t.counter}</h3><div class="counter-circle"><div class="counter-number">${S.tawafCount}</div></div><p style="text-align:center;font-weight:600;margin-bottom:15px">${t.round} ${S.tawafCount}/7</p>${S.tawafCount<7?`<button class="btn-primary" onclick="incTaw()">+ 1 ${t.round}</button>`:`<div class="success-box"><div class="success-text">${t.tawafComplete}</div></div><button class="btn-reset" onclick="rstTaw()">${t.reset}</button>`}</div>`:''}${r.id===4?`<div style="margin-top:20px;background:white;padding:20px;border-radius:15px;border:2px solid #059669"><h3 style="text-align:center">${t.counter}</h3><div class="counter-circle"><div class="counter-number">${S.saiCount}</div></div><p style="text-align:center;font-weight:600;margin-bottom:15px">${t.trip} ${S.saiCount}/7</p>${S.saiCount<7?`<button class="btn-primary" onclick="incSai()">+ 1 ${t.trip}</button>`:`<div class="success-box"><div class="success-text">${t.saiComplete}</div></div><button class="btn-reset" onclick="rstSai()">${t.reset}</button>`}</div>`:''}</div>`:''}</div>`}).join('')}`}
+function rRites(t,rts){const isP=S.userType==='pilgrim';return `<h2 style="margin-bottom:20px">${t.rites}</h2>${rts.map((r,i)=>{const done=isP&&S.completedSteps&&S.completedSteps[r.id];return `<div class="rite-item ${done?'completed':''}"><div class="rite-header" onclick="togRite(${r.id})"><div style="display:flex;align-items:center;flex:1"><div class="rite-number ${done?'completed':''}">${i+1}</div><div style="flex:1"><h3 style="margin:0">${r.title}</h3><p style="margin:5px 0 0 0;font-size:14px">${r.description}</p>${isP?`<p style="margin:5px 0 0 0;font-size:13px;font-weight:600;color:${done?'#10b981':'#6b7280'}">${done?t.completed:t.notStarted}</p>`:''}</div></div><div style="font-size:24px;color:#059669">${S.expandedRite===r.id?'−':'+'}</div></div>${S.expandedRite===r.id?`<div class="rite-content"><h3>${t.steps}</h3><ol>${r.steps.map(s=>`<li>${s}</li>`).join('')}</ol><h3 style=\"margin-top:20px\">${t.invocation}</h3>${renderInvocations(r,isP,t)}${isP&&r.id!==2&&r.id!==4?`<div style="margin-top:20px"><button class="${done?'btn-completed':'btn-success'}" onclick="compStp(${r.id})">${done?t.completed:t.markComplete}</button></div>`:''}${r.id===2?`<div style="margin-top:20px;background:white;padding:20px;border-radius:15px;border:2px solid #059669"><h3 style="text-align:center">${t.counter}</h3><div class="counter-circle"><div class="counter-number">${S.tawafCount}</div></div><p style="text-align:center;font-weight:600;margin-bottom:15px">${t.round} ${S.tawafCount}/7</p>${S.tawafCount<7?`<button class="btn-primary" onclick="incTaw()">+ 1 ${t.round}</button>`:`<div class="success-box"><div class="success-text">${t.tawafComplete}</div></div><button class="btn-reset" onclick="rstTaw()">${t.reset}</button>`}</div>`:''}${r.id===4?`<div style="margin-top:20px;background:white;padding:20px;border-radius:15px;border:2px solid #059669"><h3 style="text-align:center">${t.counter}</h3><div class="counter-circle"><div class="counter-number">${S.saiCount}</div></div><p style="text-align:center;font-weight:600;margin-bottom:15px">${t.trip} ${S.saiCount}/7</p>${S.saiCount<7?`<button class="btn-primary" onclick="incSai()">+ 1 ${t.trip}</button>`:`<div class="success-box"><div class="success-text">${t.saiComplete}</div></div><button class="btn-reset" onclick="rstSai()">${t.reset}</button>`}</div>`:''}</div>`:''}</div>`}).join('')}`}
 function rDetailed(t,L){return `<h2 style="margin-bottom:20px">📖 Guide Complet de la Oumra</h2><div class="card" style="background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border:2px solid #059669"><h3 style="color:#047857">🎯 But de l'Ihram</h3><div style="display:flex;align-items:start;gap:10px;margin:10px 0"><span style="color:#059669;font-size:20px">✓</span><p style="margin:0"><strong>Montrer sa soumission totale à Allah</strong> - Se mettre entièrement dans un état d'adoration</p></div><div style="display:flex;align-items:start;gap:10px;margin:10px 0"><span style="color:#059669;font-size:20px">✓</span><p style="margin:0"><strong>Se détacher des besoins et désirs mondains</strong> pour se concentrer sur le rituel</p></div><div style="display:flex;align-items:start;gap:10px;margin:10px 0"><span style="color:#059669;font-size:20px">✓</span><p style="margin:0"><strong>Entrer dans un état de pureté spirituelle et morale</strong></p></div></div><div class="card" style="background:#fff;border:2px solid #d1fae5"><h3 style="color:#047857">📍 Étape 1 : Faire le Ghusl (Purification)</h3><p>Se laver complètement le corps avant d'entrer en état d'Ihram</p></div><div class="card" style="background:#fff;border:2px solid #d1fae5"><h3 style="color:#047857">👕 Étape 2 : Porter l'Ihram</h3><p><strong>Hommes :</strong> 2 pièces de tissu blanc non cousu</p><p><strong>Femmes :</strong> Vêtements modestes (pas de tenue obligatoire spécifique)</p></div><div class="card" style="background:#fff;border:2px solid #d1fae5"><h3 style="color:#047857">🤲 Étape 3 : Formuler l'intention (Niyyah)</h3><div class="dua-box" style="margin-top:15px"><h4 style="color:#059669;margin-bottom:10px">Pour soi-même :</h4><div class="arabic-text">لَبَّيْكَ اللَّهُمَّ عُمْرَةً</div><p class="phonetic-text" style="margin:10px 0">Labbayka Allāhoumma 'Umratan</p><p class="translation-text">Je réponds à ton appel, Ô Allah par une Oumra</p></div><div class="dua-box" style="margin-top:15px"><h4 style="color:#059669;margin-bottom:10px">Pour une autre personne :</h4><div class="arabic-text">لَبَّيْكَ اللَّهُمَّ عُمْرَةً عَنْ [فُلَانِ بْنِ فُلَانٍ]</div><p class="phonetic-text" style="margin:10px 0">Labbayka Allahoumma 'umrah 'an [Foulan ibn foulan]</p><p class="translation-text">Me voici, Ô Allah, pour la Omra pour [nom de la personne fils d'un tel]</p></div></div><div class="card" style="background:#fff;border:2px solid #d1fae5"><h3 style="color:#047857">🕌 Étape 4 : Se rendre à Masjid Al-Haram</h3><p>Réciter fréquemment la Talbiya en chemin</p><div class="dua-box" style="margin-top:10px"><div class="arabic-text">لَبَّيْكَ اللَّهُمَّ لَبَّيْكَ</div><p class="phonetic-text" style="margin:10px 0">Labbayka Allāhoumma labbayk</p></div></div><div class="card" style="background:#fff;border:2px solid #d1fae5"><h3 style="color:#047857">🕋 Étape 5 : Tawaf - 7 tours autour de la Ka'ba</h3><p>Commencer au niveau de la Pierre Noire, faire 7 tours dans le sens antihoraire</p></div><div class="card" style="background:#fff;border:2px solid #d1fae5"><h3 style="color:#047857">🙏 Étape 6 : Prière de 2 Rak'at derrière Maqam Ibrahim</h3><p>Accomplir 2 unités de prière après le Tawaf</p></div><div class="card" style="background:#fff;border:2px solid #d1fae5"><h3 style="color:#047857">💧 Étape 7 : Boire l'eau de Zamzam</h3><p>Boire de l'eau de Zamzam et faire des invocations</p><div class="dua-box" style="margin-top:10px;background:#e0f2fe"><p style="color:#0369a1;margin:0">💡 <strong>Conseil :</strong> Boire en étant debout, face à la Ka'ba, en invoquant Allah pour ce que vous désirez</p></div></div><div class="card" style="background:#fff;border:2px solid #d1fae5"><h3 style="color:#047857">🏃 Étape 8 : Sa'i - 7 allers-retours entre Safa et Marwa</h3><p>Commencer à Safa, marcher jusqu'à Marwa et répéter 7 fois</p></div><div class="card" style="background:#fff;border:2px solid #d1fae5"><h3 style="color:#047857">✂️ Étape 9 : Se raser ou raccourcir les cheveux</h3><p><strong>Hommes :</strong> Raser (Halq) ou raccourcir (Taqsir)</p><p><strong>Femmes :</strong> Couper l'équivalent d'une phalange</p></div><div class="card" style="background:#fff;border:2px solid #d1fae5"><h3 style="color:#047857">🎊 Étape 10 : Sortir de l'état d'Ihram</h3><p style="color:#059669;font-weight:600;font-size:18px">✨ Félicitations ! Votre Oumra est terminée ✨</p><p>Vous pouvez maintenant reprendre vos activités normales</p></div><div class="success-box" style="margin-top:20px"><div class="success-text">🤲 Qu'Allah accepte votre Oumra</div></div>`}
-function rGuideLoc(t){const pLat=21.4230,pLng=39.8268,dist=calcDist(pLat,pLng,S.guideLocation.lat,S.guideLocation.lng);return `<h2 style="margin-bottom:20px">${t.guideLocation}</h2><div class="guide-location-card"><h3 style="text-align:center;color:#1e40af;margin-bottom:15px">${t.guideDistance}</h3><div class="distance-display">${dist} ${t.meters}</div><div class="map-placeholder" style="margin-top:20px"><div style="text-align:center;z-index:10"><svg width="48" height="48" fill="#047857" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><p style="color:#047857;font-weight:600;margin-top:10px">${t.findGuide}</p></div><div style="position:absolute;left:50%;top:50%;width:40px;height:40px;background:#3b82f6;border-radius:50%;border:4px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.3);transform:translate(-50%,-50%)"></div><div style="position:absolute;left:60%;top:40%;width:30px;height:30px;background:#059669;border-radius:50%;border:3px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.2)"></div></div><p style="text-align:center;margin-top:15px;font-size:13px;color:#1e40af">📍 Position mise à jour en temps réel</p></div><div class="card" style="margin-top:20px;background:#fef3c7;border:2px solid #f59e0b"><h3 style="color:#92400e">💡 Conseil</h3><p style="color:#78350f;margin:0">Gardez cette page ouverte pour suivre le guide en temps réel.</p></div>`}
+function rGuideLoc(t){loadGuideLoc();const my=getPilgrimLoc(S.pilgrimCode||S.userName);const dist=(my&&S.guideLocation)?calcDist(my.lat,my.lng,S.guideLocation.lat,S.guideLocation.lng):'—';return `<h2 style="margin-bottom:20px">${t.guideLocation}</h2><div class="guide-location-card"><h3 style="text-align:center;color:#1e40af;margin-bottom:15px">${t.guideDistance}</h3><div class="distance-display">${dist} ${t.meters}</div><button class="btn-primary" onclick="updatePilgrimLocation()" style="width:100%;margin-top:15px">📍 Mettre à jour ma position</button><div class="map-placeholder" style="margin-top:20px"><div style="text-align:center;z-index:10"><svg width="48" height="48" fill="#047857" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><p style="color:#047857;font-weight:600;margin-top:10px">${t.findGuide}</p></div><div style="position:absolute;left:50%;top:50%;width:40px;height:40px;background:#3b82f6;border-radius:50%;border:4px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.25);transform:translate(-50%,-50%);"></div><div style="position:absolute;left:50%;top:50%;width:40px;height:40px;background:#3b82f6;border-radius:50%;border:4px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.3);transform:translate(-50%,-50%)"></div><div style="position:absolute;left:60%;top:40%;width:30px;height:30px;background:#059669;border-radius:50%;border:3px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.2)"></div></div><p style="text-align:center;margin-top:15px;font-size:13px;color:#1e40af">📍 Position mise à jour en temps réel</p></div><div class="card" style="margin-top:20px;background:#fef3c7;border:2px solid #f59e0b"><h3 style="color:#92400e">💡 Conseil</h3><p style="color:#78350f;margin:0">Gardez cette page ouverte pour suivre le guide en temps réel.</p></div>`}
 function rMyActs(t){return `<h2 style="margin-bottom:20px">${t.myActivities}</h2>${S.activities.length===0?`<p style="text-align:center;color:#6b7280;padding:40px 0">${t.noActivities}</p>`:S.activities.map(a=>{const resp=S.activityResponses[a.id]?.[S.pilgrimCode];const status=resp?resp.status:'pending';return `<div class="activity-item"><div style="margin-bottom:15px"><h3 style="margin:0 0 5px 0">${a.name}</h3><p style="margin:0;font-size:14px;color:#6b7280">📍 ${a.location}</p><p style="margin:5px 0 0 0;font-size:14px;color:#6b7280">📅 ${a.date||"Date non définie"} • 🕐 ${a.time}</p></div>${status==='pending'?`<div style="display:flex;gap:10px"><button class="btn-success" onclick="respondActivity(${a.id},'validated')" style="flex:1">✓ Valider présence</button><button class="btn-danger" onclick="respondActivity(${a.id},'cancelled')" style="flex:1">✗ Annuler présence</button></div>`:status==='validated'?`<span class="badge badge-success" style="padding:10px">✓ Présence validée</span>`:`<span class="badge badge-absent" style="padding:10px">✗ Présence annulée</span>`}</div>`}).join('')}`}
 function rMyQs(t){const myQ=S.questions.filter(q=>q.pilgrimName===S.userName);return `<div class="flex-between" style="margin-bottom:20px"><h2 style="margin:0">${t.yourQuestions}</h2><button class="btn-primary btn-small" onclick="shwAsk()">+ ${t.askQuestion}</button></div>${S.showAskQuestion?`<div class="card" style="background:#f0fdf4"><h3>${t.askQuestion}</h3><textarea id="qTxt" placeholder="${t.questionPlaceholder}"></textarea><div class="flex-row"><button class="btn-primary" onclick="askQ()">${t.send}</button><button class="btn-secondary" onclick="hidAsk()">${t.cancel}</button></div></div>`:''}${myQ.length===0?`<p style="text-align:center;color:#6b7280;padding:40px 0">${t.noQuestions}</p>`:myQ.map(q=>`<div class="question-item"><div class="flex-between" style="margin-bottom:10px"><p class="message-time">${fmtTime(q.time)}</p>${q.answered?'<span class="badge badge-success">'+t.answered+'</span>':'<span class="badge badge-warning">'+t.awaitingResponse+'</span>'}</div><p style="margin:10px 0;padding:10px;background:white;border-radius:8px">${q.question}</p>${q.answered?`<div class="question-response"><strong>${t.response}:</strong> ${q.response}</div>`:''}</div>`).join('')}`}
 function rProg(t){return `<h2 style="margin-bottom:20px">${t.progress}</h2>${S.pilgrims.length===0?`<p style="text-align:center;color:#6b7280;padding:40px 0">${t.noPilgrims}</p>`:S.pilgrims.map(p=>{const prog=calcProg(p.completedSteps),cnt=getCnt(p.completedSteps);return `<div class="pilgrim-item"><div class="flex-between" style="margin-bottom:10px"><div style="flex:1"><h3 style="margin:0">${p.name}</h3></div><button class="btn-primary btn-small" onclick="viewProg(${p.id})">${t.viewProgress}</button></div><div class="progress-bar"><div class="progress-fill" style="width:${prog}%"></div></div><p style="font-size:13px;color:#059669;font-weight:600;margin-top:5px">${cnt} ${t.of} 5 ${t.stepsCompleted} (${prog}%)</p>${prog===100?'<span class="badge badge-success">✓ Oumrah terminée</span>':''}${prog===0?'<span class="badge badge-warning">Pas commencé</span>':''}</div>`}).join('')}`}
 function rMsgs(t){return `<div class="flex-between" style="margin-bottom:20px"><h2 style="margin:0">${t.messages}</h2><button class="btn-primary btn-small" onclick="shwMsg()">+ ${t.addMessage}</button></div>${S.showAddMessage?`<div class="card" style="background:#f0fdf4"><h3>${t.addMessage}</h3><input type="text" id="msgT" placeholder="${t.messageTitle}"><textarea id="msgC" placeholder="${t.messageContent}"></textarea><div class="flex-row"><button class="btn-primary" onclick="sndMsg()">${t.send}</button><button class="btn-secondary" onclick="hidMsg()">${t.cancel}</button></div></div>`:''}${S.messages.length===0?`<p style="text-align:center;color:#6b7280;padding:40px 0">${t.noMessages}</p>`:S.messages.map(m=>`<div class="message-item"><div class="message-header"><h3 style="margin:0">${m.title}</h3><button class="btn-danger btn-small" onclick="delMsg(${m.id})">${t.delete}</button></div><p style="margin:10px 0">${m.content}</p><p class="message-time">${fmtTime(m.time)}</p></div>`).join('')}`}
 function rRooms(t){const storedPilgrims=localStorage.getItem('pilgrims');if(storedPilgrims&&S.userType==='guide'){const allPilgrims=JSON.parse(storedPilgrims);S.pilgrims=allPilgrims.filter(p=>p.groupCode===S.currentGroup)}return `<div class="flex-between" style="margin-bottom:20px"><h2 style="margin:0">${t.rooms}</h2><button class="btn-primary btn-small" onclick="shwPil()">+ ${t.addPilgrim}</button></div>${S.showAddPilgrim?`<div class="card" style="background:#f0fdf4"><h3>${t.addPilgrim}</h3><input type="text" id="pilN" placeholder="${t.pilgrimName}"><input type="text" id="pilH" placeholder="Nom de l'hôtel"><input type="text" id="pilR" placeholder="${t.roomNumber}"><div class="flex-row"><button class="btn-primary" onclick="savPil()">${t.save}</button><button class="btn-secondary" onclick="hidPil()">${t.cancel}</button></div></div>`:''}${S.showEditPilgrim?`<div class="card" style="background:#fff3cd;border:2px solid #f59e0b"><h3>✏️ Modifier l'hôtel et la chambre</h3><input type="text" id="editH" placeholder="Nom de l'hôtel" value="${S.pilgrims.find(p=>p.id===S.editPilgrimId)?.hotel||''}"><input type="text" id="editR" placeholder="${t.roomNumber}" value="${S.pilgrims.find(p=>p.id===S.editPilgrimId)?.room||''}"><div class="flex-row"><button class="btn-primary" onclick="updatePil()">${t.save}</button><button class="btn-secondary" onclick="hidEditPil()">${t.cancel}</button></div></div>`:''}${S.pilgrims.length===0?`<p style="text-align:center;color:#6b7280;padding:40px 0">${t.noPilgrims}</p>`:S.pilgrims.map(p=>{const init=getInit(p.name);return `<div class="pilgrim-item"><div style="display:flex;flex-direction:column;gap:10px"><div class="flex-between"><div style="display:flex;align-items:center;gap:15px;flex:1"><div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#059669 0%,#0d9488 100%);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:18px;overflow:hidden;flex-shrink:0">${p.photo?`<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover" alt="${p.name}">`:init}</div><div style="flex:1"><h3 style="margin-bottom:5px">${p.name}</h3><div style="display:flex;gap:10px;margin:5px 0;flex-wrap:wrap">${p.hotel?`<span class="badge badge-info">🏨 ${p.hotel}</span>`:''}<span class="badge badge-info">🚪 ${p.room||'N/A'}</span><span class="badge badge-warning" style="font-family:monospace;font-size:13px">Code: ${p.code}</span></div></div></div><div style="display:flex;gap:5px"><button class="btn-warning btn-small" onclick="shwEditPil(${p.id})">✏️</button><button class="btn-danger btn-small" onclick="delPil(${p.id})">🗑️</button></div></div><button class="btn-success btn-small" onclick='sendWhatsApp(${JSON.stringify(p).replace(/'/g,"\\'")})'style="width:100%;background:#25D366;border-color:#25D366">📱 ${t.sendWhatsApp}</button></div></div>`}).join('')}`}
-function rMap(t){return `<h2 style="margin-bottom:20px">${t.map}</h2><div class="card"><div style="background:linear-gradient(135deg,#d1fae5 0%,#a5f3fc 100%);height:300px;border-radius:15px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden"><p style="color:#047857;font-weight:600;z-index:10">Carte GPS interactive</p>${S.pilgrims.filter(p=>p.online).map((p,i)=>`<div style="position:absolute;left:${30+i*15}%;top:${40+i*10}%;width:30px;height:30px;background:#059669;border-radius:50%;border:3px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.2)"></div>`).join('')}</div></div>${S.pilgrims.map(p=>`<div class="pilgrim-item"><div class="flex-between"><div><h3 style="margin:0">${p.name}</h3><p style="margin:5px 0 0 0;font-size:13px;color:#6b7280">${p.online?`<span class="status-online"></span>${t.online}`:`<span class="status-offline"></span>${t.offline}`}</p></div>${p.online?`<p style="color:#059669;font-weight:600;margin:0">~${Math.floor(Math.random()*500)+100}m</p>`:''}</div></div>`).join('')}`}
-function rPresence(t){return `<div class="flex-between" style="margin-bottom:20px"><h2 style="margin:0">${t.presence}</h2><button class="btn-primary btn-small" onclick="shwAct()">+ ${t.addActivity}</button></div>${S.showAddActivity?`<div class="card" style="background:#f0fdf4"><h3>${t.addActivity}</h3><input type="text" id="actN" placeholder="${t.activityName}"><input type="text" id="actL" placeholder="${t.activityLocation}"><label style="font-size:14px;color:#047857;font-weight:600;margin:15px 0 5px 0;display:block">📅 Date</label><input type="date" id="actD" style="margin-bottom:10px"><label style="font-size:14px;color:#047857;font-weight:600;margin:10px 0 5px 0;display:block">🕐 Heure</label><input type="time" id="actT"><div class="flex-row"><button class="btn-primary" onclick="savAct()">${t.save}</button><button class="btn-secondary" onclick="hidAct()">${t.cancel}</button></div></div>`:''}${S.activities.length===0?`<p style="text-align:center;color:#6b7280;padding:40px 0">${t.noActivities}</p>`:S.activities.map(a=>{const pCnt=Object.values(a.presence||{}).filter(p=>p).length;return `<div class="activity-item"><div class="flex-between" style="margin-bottom:10px"><div style="flex:1"><h3 style="margin:0 0 5px 0">${a.name}</h3><p style="margin:0;font-size:14px;color:#6b7280">📍 ${a.location}</p><p style="margin:5px 0">📅 ${a.date||"Date non définie"} • 🕐 ${a.time}</p><span class="badge badge-present">${pCnt} ${t.presenceCount}</span></div><button class="btn-danger btn-small" onclick="delAct(${a.id})">${t.delete}</button></div><div style="margin-top:15px;border-top:2px solid #e5e7eb;padding-top:15px"><h4 style="margin:0 0 10px 0;color:#059669;font-size:14px">${t.markPresence}</h4>${S.pilgrims.map(p=>{const pres=a.presence&&a.presence[p.id];return `<div class="checkbox-item"><input type="checkbox" ${pres?'checked':''} onchange="togPres(${a.id},${p.id})"><span>${p.name}</span>${pres?`<span class="badge badge-present" style="margin-left:auto">${t.present}</span>`:`<span class="badge badge-absent" style="margin-left:auto">${t.absent}</span>`}</div>`}).join('')}</div></div>`}).join('')}`}
+function rMap(t){
+loadGuideLoc();
+if(S.userType!=='guide'){
+  return `<h2 style="margin-bottom:20px">${t.map}</h2><div class="card"><p style="margin-top:0;color:#6b7280">${t.onlyGuideLocation||'Vous ne pouvez voir que la localisation du guide.'}</p><button class="btn-primary" onclick="updatePilgrimLocation()" style="width:100%">📍 Mettre à jour ma position</button></div>`;
+}
+const guide=S.guideLocation;
+const list=S.pilgrims.map(p=>{
+  const loc=getPilgrimLoc(p.code);
+  const dist=(loc&&guide)?calcDist(loc.lat,loc.lng,guide.lat,guide.lng):null;
+  return `<div class="pilgrim-item"><div class="flex-between"><div><h3 style="margin:0">${p.name}</h3><p style="margin:5px 0 0 0;font-size:13px;color:#6b7280">${p.online?`<span class="status-online"></span>${t.online}`:`<span class="status-offline"></span>${t.offline}`}</p>${loc?`<p style="margin:6px 0 0 0;font-size:12px;color:#6b7280">📍 ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}</p>`:`<p style="margin:6px 0 0 0;font-size:12px;color:#9ca3af">📍 Position inconnue</p>`}</div>${dist?`<p style="color:#059669;font-weight:700;margin:0">${dist} ${t.meters}</p>`:''}</div></div>`;
+}).join('');
+return `<h2 style="margin-bottom:20px">${t.map}</h2>
+  <div class="card">
+    <div class="flex-between" style="margin-bottom:12px">
+      <div>
+        <h3 style="margin:0">📍 Position du guide</h3>
+        <p style="margin:6px 0 0 0;font-size:12px;color:#6b7280">${guide?`${guide.lat.toFixed(5)}, ${guide.lng.toFixed(5)}`:'—'}</p>
+      </div>
+      <button class="btn-primary btn-small" onclick="updateGuideLocation()">Mettre à jour</button>
+    </div>
+    <div style="background:linear-gradient(135deg,#d1fae5 0%,#a5f3fc 100%);height:240px;border-radius:15px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
+      <p style="color:#047857;font-weight:600;z-index:10">Vue simplifiée (GPS)</p>
+      <div style="position:absolute;left:50%;top:50%;width:38px;height:38px;background:#1d4ed8;border-radius:50%;border:4px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.2);transform:translate(-50%,-50%)"></div>
+    </div>
+  </div>
+  ${list}`;
+}
+function rPresence(t){
+const getActStats=(actId)=>{const r=S.activityResponses?.[actId]||{};let ok=0,no=0,pend=0;S.pilgrims.forEach(p=>{const s=r?.[p.code]?.status; if(s==='validated') ok++; else if(s==='cancelled') no++; else pend++;});return {ok,no,pend};};
+return `<div class="flex-between" style="margin-bottom:20px"><h2 style="margin:0">${t.presence}</h2><button class="btn-primary btn-small" onclick="shwAct()">+ ${t.addActivity}</button></div>${S.showAddActivity?`<div class="card" style="background:#f0fdf4"><h3>${t.addActivity}</h3><input type="text" id="actN" placeholder="${t.activityName}"><input type="text" id="actL" placeholder="${t.activityLocation}"><label style="font-size:14px;color:#047857;font-weight:600;margin:15px 0 5px 0;display:block">📅 Date</label><input type="date" id="actD" style="margin-bottom:10px"><label style="font-size:14px;color:#047857;font-weight:600;margin:10px 0 5px 0;display:block">🕐 Heure</label><input type="time" id="actT"><div class="flex-row"><button class="btn-primary" onclick="savAct()">${t.save}</button><button class="btn-secondary" onclick="hidAct()">${t.cancel}</button></div></div>`:''}${S.activities.length===0?`<p style="text-align:center;color:#6b7280;padding:40px 0">${t.noActivities}</p>`:S.activities.map(a=>{const pCnt=Object.values(a.presence||{}).filter(p=>p).length;return `<div class="activity-item"><div class="flex-between" style="margin-bottom:10px"><div style="flex:1"><h3 style="margin:0 0 5px 0">${a.name}</h3><p style="margin:0;font-size:14px;color:#6b7280">📍 ${a.location}</p><p style="margin:5px 0">📅 ${a.date||"Date non définie"} • 🕐 ${a.time}</p>${(()=>{const st=getActStats(a.id);return `<span class=\"badge badge-present\">✅ ${st.ok}</span><span class=\"badge badge-absent\" style=\"margin-left:8px\">❌ ${st.no}</span><span class=\"badge\" style=\"margin-left:8px;background:#f3f4f6;color:#374151\">⏳ ${st.pend}</span>`})()}</div><button class="btn-danger btn-small" onclick="delAct(${a.id})">${t.delete}</button></div><div style="margin-top:15px;border-top:2px solid #e5e7eb;padding-top:15px"><h4 style="margin:0 0 10px 0;color:#059669;font-size:14px">${t.markPresence}</h4>${S.pilgrims.map(p=>{const pres=a.presence&&a.presence[p.id];return `<div class="checkbox-item"><input type="checkbox" ${pres?'checked':''} onchange="togPres(${a.id},${p.id})"><span>${p.name}</span>${pres?`<span class="badge badge-present" style="margin-left:auto">${t.present}</span>`:`<span class="badge badge-absent" style="margin-left:auto">${t.absent}</span>`}</div>`}).join('')}</div></div>`}).join('')}`}
 R();
 </script>
+
+<script>
+(async () => {
+  try{
+    if('serviceWorker' in navigator){
+      // Unregister old SWs (from previous deployments) to avoid blank-cache issues
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for(const r of regs){ await r.unregister(); }
+      // Register fresh SW (optional offline)
+      await navigator.serviceWorker.register('./sw.js', { scope: './' });
+    }
+  }catch(e){ /* ignore */ }
+})();
+</script>
+
+
+<div id="dbSettings" class="modal hidden">
+  <div class="modal-backdrop" onclick="closeDbSettings()"></div>
+  <div class="modal-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <div style="font-weight:950">Base de données (Firebase)</div>
+      <button class="btn-secondary" style="padding:8px 12px" onclick="closeDbSettings()">✕</button>
+    </div>
+    <p style="margin-top:10px">Colle ici la <b>config Firebase</b> (JSON) depuis Firebase Console → Project settings → Your apps.</p>
+    <textarea id="fbJson" rows="8" placeholder='{"apiKey":"...","authDomain":"...","databaseURL":"...","projectId":"...","appId":"..."}' style="width:100%;margin-top:10px"></textarea>
+    <div style="display:flex;gap:10px;margin-top:12px">
+      <button class="btn-primary" style="flex:1" onclick="saveDbSettings()">Enregistrer</button>
+      <button class="btn-secondary" style="flex:1" onclick="clearDbSettings()">Désactiver</button>
+    </div>
+    <p style="margin-top:10px;font-size:12px;color:var(--muted)">Une fois activé : messages, activités, présence, pèlerins et localisations sont synchronisés pour le groupe.</p>
+  </div>
+</div>
 </body>
 </html>
