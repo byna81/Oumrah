@@ -135,18 +135,79 @@ input,select,textarea{background:rgba(2,6,23,.35)!important;color:var(--text)!im
 .modal-card{position:relative;z-index:1;width:min(640px,100%);margin:0 auto;padding:14px 14px 18px;border-top-left-radius:22px;border-top-right-radius:22px;
 background:linear-gradient(180deg, rgba(20,26,34,.98), rgba(16,22,29,.98));border:1px solid var(--border);box-shadow:0 -24px 70px rgba(0,0,0,.55)}
 
+
+
+/* ===== v7.1 Dark fixes for connected screens ===== */
+:root{
+  --bg0:#070B10;
+  --bg1:#0B1320;
+  --card:#0E1726;
+  --card2:#0C1422;
+  --text:#EAF0FF;
+  --muted2:rgba(234,240,255,.72);
+  --border2:rgba(255,255,255,.10);
+  --gold:#D7B56D;
+  --gold2:#B9913B;
+  --green:#1FB58A;
+}
+body{background:radial-gradient(1200px 700px at 20% 10%, rgba(215,181,109,.18), transparent 55%),
+                 radial-gradient(900px 600px at 80% 0%, rgba(31,181,138,.14), transparent 55%),
+                 linear-gradient(180deg,var(--bg0),var(--bg1)); color:var(--text);}
+/* Kill legacy light mint backgrounds */
+.app, .container, .screen, .content, #app{background:transparent !important;}
+/* Generic cards */
+.card, .panel, .box, .tile, .section, .rite-card, .msg-card, .activity-card,
+.profile-card, .progress-card, .room-card{
+  background:linear-gradient(180deg, rgba(14,23,38,.92), rgba(12,20,34,.92)) !important;
+  border:1px solid var(--border2) !important;
+  box-shadow:0 18px 50px rgba(0,0,0,.35) !important;
+  color:var(--text) !important;
+}
+/* Any big legacy wrapper with green-ish inline bg */
+[style*="background:#b"], [style*="background: #b"], [style*="background:#c"], [style*="background: #c"],
+[style*="background:rgb(1"], [style*="background: rgb(1"],
+[style*="background:#e"], [style*="background: #e"]{
+  background:linear-gradient(180deg, rgba(14,23,38,.92), rgba(12,20,34,.92)) !important;
+  border-color:var(--border2) !important;
+  color:var(--text) !important;
+}
+/* Tabs bottom */
+.tabs{
+  background:rgba(6,10,16,.72) !important;
+  border-top:1px solid var(--border2) !important;
+  backdrop-filter: blur(10px);
+}
+.tab{color:rgba(234,240,255,.70) !important;}
+.tab.active{color:var(--gold) !important;}
+/* Buttons */
+button, .btn{border-radius:18px;}
+.primary, .btn.primary{
+  background:linear-gradient(90deg,var(--gold),var(--gold2)) !important;
+  color:#0A0F16 !important;
+  border:none !important;
+}
+/* Inputs */
+input, select, textarea{
+  background:rgba(255,255,255,.06) !important;
+  color:var(--text) !important;
+  border:1px solid var(--border2) !important;
+}
+label, .label{color:var(--muted2) !important;}
+h1,h2,h3{color:var(--text) !important;}
+/* ===== /v7.1 fixes ===== */
+
 </style>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-database-compat.js"></script>
 </head>
 <body>
-<div id="versionBadge">v7.0.0</div>
+<div id="versionBadge">v7.1.0</div>
 <div id="app"></div>
 <script>
 (async()=>{
   try{
-    const key="umrah_sw_cleanup_v7.0.0";
+    const key="umrah_sw_cleanup_v7.1.0";
     if(!localStorage.getItem(key)) {
       if('serviceWorker' in navigator) {
         const regs=await navigator.serviceWorker.getRegistrations();
