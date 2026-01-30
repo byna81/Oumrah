@@ -137,64 +137,79 @@ background:linear-gradient(180deg, rgba(20,26,34,.98), rgba(16,22,29,.98));borde
 
 
 
-/* ===== v7.1 Dark fixes for connected screens ===== */
+/* ===== v7.2 CLEAN THEME OVERRIDES (apply to all legacy screens) ===== */
 :root{
   --bg0:#070B10;
   --bg1:#0B1320;
-  --card:#0E1726;
-  --card2:#0C1422;
+  --cardA:rgba(14,23,38,.94);
+  --cardB:rgba(10,18,32,.92);
   --text:#EAF0FF;
-  --muted2:rgba(234,240,255,.72);
-  --border2:rgba(255,255,255,.10);
-  --gold:#D7B56D;
-  --gold2:#B9913B;
+  --muted:rgba(234,240,255,.72);
+  --border:rgba(255,255,255,.10);
   --green:#1FB58A;
+  --gold:#D7B56D;
 }
-body{background:radial-gradient(1200px 700px at 20% 10%, rgba(215,181,109,.18), transparent 55%),
-                 radial-gradient(900px 600px at 80% 0%, rgba(31,181,138,.14), transparent 55%),
-                 linear-gradient(180deg,var(--bg0),var(--bg1)); color:var(--text);}
-/* Kill legacy light mint backgrounds */
-.app, .container, .screen, .content, #app{background:transparent !important;}
-/* Generic cards */
-.card, .panel, .box, .tile, .section, .rite-card, .msg-card, .activity-card,
-.profile-card, .progress-card, .room-card{
-  background:linear-gradient(180deg, rgba(14,23,38,.92), rgba(12,20,34,.92)) !important;
-  border:1px solid var(--border2) !important;
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(1200px 700px at 20% 10%, rgba(215,181,109,.18), transparent 55%),
+    radial-gradient(900px 600px at 80% 0%, rgba(31,181,138,.14), transparent 55%),
+    linear-gradient(180deg,var(--bg0),var(--bg1)) !important;
+  color:var(--text) !important;
+}
+/* Neutralize old light backgrounds */
+*[style*="background:#b"], *[style*="background: #b"],
+*[style*="background:#c"], *[style*="background: #c"],
+*[style*="background:#e"], *[style*="background: #e"],
+*[style*="background:rgb(1"], *[style*="background: rgb(1"],
+.container,.screen,.content,#app{background:transparent !important;}
+/* Cardify common blocks */
+.card,.panel,.box,.tile,.section,
+.profile-card,.progress-card,.room-card,
+.activity-card,.msg-card,.rite-card,
+div[style*="border: 2px solid"], div[style*="border:2px solid"], div[style*="border: 3px solid"], div[style*="border:3px solid"]{
+  background:linear-gradient(180deg,var(--cardA),var(--cardB)) !important;
+  border:1px solid var(--border) !important;
+  border-radius:22px !important;
   box-shadow:0 18px 50px rgba(0,0,0,.35) !important;
   color:var(--text) !important;
 }
-/* Any big legacy wrapper with green-ish inline bg */
-[style*="background:#b"], [style*="background: #b"], [style*="background:#c"], [style*="background: #c"],
-[style*="background:rgb(1"], [style*="background: rgb(1"],
-[style*="background:#e"], [style*="background: #e"]{
-  background:linear-gradient(180deg, rgba(14,23,38,.92), rgba(12,20,34,.92)) !important;
-  border-color:var(--border2) !important;
+/* Typography */
+h1,h2,h3,h4{color:var(--text) !important}
+p,span,small,div{color:inherit}
+.muted,.subtle,.label{color:var(--muted) !important}
+/* Inputs */
+input,select,textarea{
+  background:rgba(255,255,255,.06) !important;
   color:var(--text) !important;
+  border:1px solid var(--border) !important;
+  border-radius:14px !important;
+}
+/* Buttons */
+button,.btn{
+  border-radius:18px !important;
+}
+.btn-primary,.primary{
+  background:linear-gradient(90deg,var(--gold),#B9913B) !important;
+  color:#0A0F16 !important;
+  border:none !important;
+}
+.btn-secondary,.secondary{
+  background:rgba(255,255,255,.06) !important;
+  color:var(--text) !important;
+  border:1px solid var(--border) !important;
 }
 /* Tabs bottom */
 .tabs{
   background:rgba(6,10,16,.72) !important;
-  border-top:1px solid var(--border2) !important;
+  border-top:1px solid var(--border) !important;
   backdrop-filter: blur(10px);
 }
 .tab{color:rgba(234,240,255,.70) !important;}
 .tab.active{color:var(--gold) !important;}
-/* Buttons */
-button, .btn{border-radius:18px;}
-.primary, .btn.primary{
-  background:linear-gradient(90deg,var(--gold),var(--gold2)) !important;
-  color:#0A0F16 !important;
-  border:none !important;
-}
-/* Inputs */
-input, select, textarea{
-  background:rgba(255,255,255,.06) !important;
-  color:var(--text) !important;
-  border:1px solid var(--border2) !important;
-}
-label, .label{color:var(--muted2) !important;}
-h1,h2,h3{color:var(--text) !important;}
-/* ===== /v7.1 fixes ===== */
+/* Progress bars */
+.progress-fill{background:linear-gradient(90deg,var(--green),#35d0a5) !important;}
+/* ===== /v7.2 ===== */
 
 </style>
 
@@ -202,12 +217,12 @@ h1,h2,h3{color:var(--text) !important;}
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-database-compat.js"></script>
 </head>
 <body>
-<div id="versionBadge">v7.1.0</div>
+<div id="versionBadge">v7.2.0</div>
 <div id="app"></div>
 <script>
 (async()=>{
   try{
-    const key="umrah_sw_cleanup_v7.1.0";
+    const key="umrah_sw_cleanup_v7.2.0";
     if(!localStorage.getItem(key)) {
       if('serviceWorker' in navigator) {
         const regs=await navigator.serviceWorker.getRegistrations();
