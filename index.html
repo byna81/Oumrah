@@ -218,7 +218,7 @@ button,.btn{
 
 
 
-/* ===== v7.2.2 Hotfix: Dark everywhere + legacy cleanup ===== */
+/* ===== v8.0.0 Hotfix: Dark everywhere + legacy cleanup ===== */
 :root{
   --bg0:#070B10; --bg1:#0B1320; --card:#0E1726; --card2:#0C1422;
   --text:#EAF0FF; --muted:rgba(234,240,255,.72); --border:rgba(255,255,255,.10);
@@ -276,7 +276,84 @@ input, select, textarea{
 /* Titles */
 h1,h2,h3,h4{color:var(--text) !important;}
 .small, .muted, .subtitle{color:var(--muted) !important;}
-/* ===== /v7.2.2 Hotfix ===== */
+/* ===== /v8.0.0 Hotfix ===== */
+
+
+
+/* ===== v8.0 Premium Dark UI override (no legacy mint) ===== */
+:root{
+  --bg0:#070B10; --bg1:#0B1320; --panel:#0E1726; --panel2:#0C1422;
+  --text:#EAF0FF; --muted:rgba(234,240,255,.70);
+  --border:rgba(255,255,255,.10);
+  --gold:#D7B56D; --gold2:#B9913B;
+  --accent:#1FB58A;
+  --danger:#ef4444;
+}
+html,body{background:radial-gradient(1200px 700px at 20% 10%, rgba(215,181,109,.16), transparent 55%),
+                 radial-gradient(900px 600px at 80% 0%, rgba(31,181,138,.12), transparent 55%),
+                 linear-gradient(180deg,var(--bg0),var(--bg1)) !important;
+  color:var(--text) !important;
+}
+a{color:var(--gold) !important}
+h1,h2,h3,h4{color:var(--text) !important}
+.small,.muted,.subtitle{color:var(--muted) !important}
+.container, .content, #app{background:transparent !important}
+.topbar{background:rgba(6,10,16,.55) !important;border-bottom:1px solid var(--border) !important;backdrop-filter:blur(10px)}
+/* unify all cards/panels */
+.card,.panel,.box,.tile,.section,.pilgrim-item,.message-item,.activity-item,.question-item,
+.rite-card,.profile-card,.progress-card,.room-card,.code-display{
+  background:linear-gradient(180deg, rgba(14,23,38,.92), rgba(12,20,34,.92)) !important;
+  border:1px solid var(--border) !important;
+  box-shadow:0 18px 50px rgba(0,0,0,.35) !important;
+  color:var(--text) !important;
+}
+.code-display{font-size:22px !important}
+.badge,.badge-present,.badge-absent,.badge-info,.badge-warning,.badge-success{
+  border:1px solid var(--border) !important;
+  background:rgba(255,255,255,.06) !important;
+  color:var(--text) !important;
+}
+.progress-bar{background:rgba(255,255,255,.10) !important}
+.progress-fill{background:linear-gradient(90deg,var(--gold),var(--gold2)) !important}
+button,.btn{
+  border-radius:18px !important;
+  border:1px solid var(--border) !important;
+  background:rgba(255,255,255,.06) !important;
+  color:var(--text) !important;
+}
+.btn-primary,.primary,.btn.primary{
+  background:linear-gradient(90deg,var(--gold),var(--gold2)) !important;
+  color:#0A0F16 !important;
+  border:none !important;
+}
+.btn-danger{background:var(--danger) !important;border:none !important;color:#fff !important}
+.btn-success{background:var(--accent) !important;border:none !important;color:#061018 !important}
+input,select,textarea{
+  background:rgba(255,255,255,.06) !important;
+  color:var(--text) !important;
+  border:1px solid var(--border) !important;
+  border-radius:14px !important;
+}
+.tabs{
+  background:rgba(6,10,16,.72) !important;
+  border-top:1px solid var(--border) !important;
+  backdrop-filter:blur(10px);
+}
+.tab{color:rgba(234,240,255,.66) !important}
+.tab.active{color:var(--gold) !important}
+.tab.active::after{background:linear-gradient(90deg,var(--gold),var(--gold2)) !important}
+.rite-item, .rite-card{border-radius:18px !important}
+.rite-number{background:rgba(255,255,255,.08) !important;color:var(--gold) !important;border:1px solid var(--border) !important}
+.rite-title{color:var(--text) !important}
+.rite-desc{color:var(--muted) !important}
+.terminated{color:var(--accent) !important}
+.modal-content, .sheetPanel{
+  background:linear-gradient(180deg, rgba(14,23,38,.96), rgba(12,20,34,.96)) !important;
+  border:1px solid var(--border) !important;
+  color:var(--text) !important;
+}
+.overlay,.sheetBackdrop{background:rgba(2,6,23,.55) !important}
+/* ===== /v8.0 override ===== */
 
 </style>
 
@@ -284,7 +361,7 @@ h1,h2,h3,h4{color:var(--text) !important;}
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-database-compat.js"></script>
 
 <script>
-/* v7.2.2 force update: unregister old Service Workers + clear caches */
+/* v8.0.0 force update: unregister old Service Workers + clear caches */
 (async function(){
   try{
     if('serviceWorker' in navigator){
@@ -301,12 +378,12 @@ h1,h2,h3,h4{color:var(--text) !important;}
 
 </head>
 <body>
-<div id="versionBadge">v7.2.2</div>
+<div id="versionBadge">v8.0.0</div>
 <div id="app"></div>
 <script>
 (async()=>{
   try{
-    const key="umrah_sw_cleanup_v7.2.2";
+    const key="umrah_sw_cleanup_v8.0.0";
     if(!localStorage.getItem(key)) {
       if('serviceWorker' in navigator) {
         const regs=await navigator.serviceWorker.getRegistrations();
