@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -211,18 +216,97 @@ button,.btn{
 .progress-fill{background:linear-gradient(90deg,var(--green),#35d0a5) !important;}
 /* ===== /v7.2 ===== */
 
+
+
+/* ===== v7.2.2 Hotfix: Dark everywhere + legacy cleanup ===== */
+:root{
+  --bg0:#070B10; --bg1:#0B1320; --card:#0E1726; --card2:#0C1422;
+  --text:#EAF0FF; --muted:rgba(234,240,255,.72); --border:rgba(255,255,255,.10);
+  --gold:#D7B56D; --gold2:#B9913B; --green:#1FB58A;
+}
+html,body{background:linear-gradient(180deg,var(--bg0),var(--bg1)) !important; color:var(--text) !important;}
+/* Force any old light panels to dark */
+div[style*="background"], section[style*="background"], main[style*="background"]{
+  background:transparent !important;
+}
+/* Typical old mint cards */
+div[style*="#e"], div[style*="#b"], div[style*="rgb(19"], div[style*="rgb(20"]{
+  background:linear-gradient(180deg, rgba(14,23,38,.92), rgba(12,20,34,.92)) !important;
+  border-color:var(--border) !important;
+  color:var(--text) !important;
+}
+/* Old green borders */
+div[style*="#009"], div[style*="rgb(0, 155, 119"], div[style*="#00"]{
+  border-color:var(--border) !important;
+}
+/* Cards */
+.card, .panel, .box, .tile, .section, .rite-card, .msg-card, .activity-card,
+.profile-card, .progress-card, .room-card, .container > div{
+  background:linear-gradient(180deg, rgba(14,23,38,.92), rgba(12,20,34,.92)) !important;
+  border:1px solid var(--border) !important;
+  box-shadow:0 18px 50px rgba(0,0,0,.35) !important;
+  color:var(--text) !important;
+}
+/* Header area */
+header, .topbar, .appHeader{
+  background:rgba(6,10,16,.55) !important;
+  border-bottom:1px solid var(--border) !important;
+  backdrop-filter: blur(10px);
+}
+/* Buttons */
+button, .btn{border-radius:18px !important;}
+.primary, .btn.primary{
+  background:linear-gradient(90deg,var(--gold),var(--gold2)) !important;
+  color:#0A0F16 !important; border:none !important;
+}
+/* Inputs */
+input, select, textarea{
+  background:rgba(255,255,255,.06) !important;
+  color:var(--text) !important;
+  border:1px solid var(--border) !important;
+}
+/* Bottom tabs legacy */
+.tabs{
+  background:rgba(6,10,16,.72) !important;
+  border-top:1px solid var(--border) !important;
+  backdrop-filter: blur(10px);
+}
+.tab{color:rgba(234,240,255,.70) !important;}
+.tab.active{color:var(--gold) !important;}
+/* Titles */
+h1,h2,h3,h4{color:var(--text) !important;}
+.small, .muted, .subtitle{color:var(--muted) !important;}
+/* ===== /v7.2.2 Hotfix ===== */
+
 </style>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-database-compat.js"></script>
+
+<script>
+/* v7.2.2 force update: unregister old Service Workers + clear caches */
+(async function(){
+  try{
+    if('serviceWorker' in navigator){
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for(const r of regs){ try{ await r.unregister(); }catch(e){} }
+    }
+    if('caches' in window){
+      const keys = await caches.keys();
+      for(const k of keys){ try{ await caches.delete(k); }catch(e){} }
+    }
+  }catch(e){}
+})();
+</script>
+
 </head>
 <body>
-<div id="versionBadge">v7.2.0</div>
+<div id="versionBadge">v7.2.2</div>
 <div id="app"></div>
 <script>
 (async()=>{
   try{
-    const key="umrah_sw_cleanup_v7.2.0";
+    const key="umrah_sw_cleanup_v7.2.2";
     if(!localStorage.getItem(key)) {
       if('serviceWorker' in navigator) {
         const regs=await navigator.serviceWorker.getRegistrations();
