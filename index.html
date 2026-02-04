@@ -242,11 +242,73 @@ const firebaseConfig = {
 };
 
 // Initialiser Firebase
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
+try {
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+  window.db = firebase.database();
+  console.log('✅ Firebase initialisé');
+  console.log('✅ Database URL:', firebaseConfig.databaseURL);
+  
+  // Test de connexion
+  window.window.db.ref('.info/connected').on('value', snap => {
+    if (snap.val() === true) {
+      console.log('✅ Connecté à Firebase');
+    } else {
+      console.log('❌ Déconnecté de Firebase');
+    }
+  });
+} catch(err) {
+  console.error('❌ Erreur Firebase:', err);
 }
-const db = firebase.database();
-console.log('✅ Firebase initialisé');
+</script>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+// Attendre que Firebase soit chargé
+window.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    if (typeof firebase !== 'undefined') {
+      try {
+        const firebaseConfig = {
+          apiKey: "AIzaSyCEtBQp2PNeSB-w_Yl877VfzLr5vdfSr-0",
+          authDomain: "umrah-groupe-claud.firebaseapp.com",
+          databaseURL: "https://umrah-groupe-claud-default-rtdb.europe-west1.firebasedatabase.app",
+          projectId: "umrah-groupe-claud",
+          storageBucket: "umrah-groupe-claud.firebasestorage.app",
+          messagingSenderId: "803001314265",
+          appId: "1:803001314265:web:e5075de940958586a507c8"
+        };
+        
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        
+        window.db = firebase.database();
+        window.firebaseReady = true;
+        console.log('✅ Firebase initialisé');
+        console.log('✅ Database URL:', firebaseConfig.databaseURL);
+        
+        // Test de connexion
+        window.db.ref('.info/connected').on('value', function(snap) {
+          if (snap.val() === true) {
+            console.log('✅ Connecté à Firebase');
+          } else {
+            console.log('❌ Déconnecté de Firebase');
+          }
+        });
+      } catch(err) {
+        console.error('❌ Erreur Firebase:', err);
+        window.firebaseReady = false;
+      }
+    } else {
+      console.error('❌ Firebase SDK non chargé');
+      window.firebaseReady = false;
+    }
+  }, 500);
+});
 </script>
 </head>
 <body>
@@ -342,12 +404,12 @@ window.addEventListener('online',()=>{S.isOnline=true;R();syncToFirebase()});
 window.addEventListener('offline',()=>{S.isOnline=false;R()});
 
 // Sync vers Firebase
-function syncToFirebase(){
+function syncToFirebase(){if(!window.firebaseReady||!window.db){console.log("⚠️ Firebase pas prêt");return;}console.log("🔄 Sync Firebase démarré");
   if(!S.isOnline||!S.currentGroup)return;
   
   // Sync groupes
   if(S.userType==='guide'){
-    db.ref('groups/'+S.currentGroup).set({
+    window.console.log('📝 Sauvegarde groupe:', S.currentGroup);window.db.ref('groups/'+S.currentGroup).set({
       guideName:S.userName,
       guideCode:S.guideCode,
       groupName:S.groupName,
@@ -361,7 +423,7 @@ function syncToFirebase(){
     const allPilgrims=JSON.parse(pilgrims);
     const groupPilgrims=allPilgrims.filter(p=>p.groupCode===S.currentGroup);
     groupPilgrims.forEach(p=>{
-      db.ref('pilgrims/'+S.currentGroup+'/'+p.code).set({
+      window.db.ref('pilgrims/'+S.currentGroup+'/'+p.code).set({
         name:p.name,
         photo:p.photo||'',
         hotel:p.hotel||'',
@@ -373,11 +435,11 @@ function syncToFirebase(){
 }
 
 // Charger depuis Firebase
-function loadFromFirebase(){
+function loadFromFirebase(){if(!window.firebaseReady||!window.db){console.log("⚠️ Firebase pas prêt pour load");return;}
   if(!S.isOnline||!S.currentGroup)return;
   
   // Écouter les pèlerins
-  db.ref('pilgrims/'+S.currentGroup).on('value',snapshot=>{
+  window.db.ref('pilgrims/'+S.currentGroup).on('value',snapshot=>{
     if(!snapshot.exists())return;
     
     const fbPilgrims=[];
@@ -415,7 +477,7 @@ function loadFromFirebase(){
 function syncMessagesToFirebase(){
   if(!S.isOnline||!S.currentGroup)return;
   S.messages.forEach(m=>{
-    db.ref('messages/'+S.currentGroup+'/'+m.id).set({
+    window.db.ref('messages/'+S.currentGroup+'/'+m.id).set({
       title:m.title,
       content:m.content,
       timestamp:m.time
@@ -426,7 +488,7 @@ function syncMessagesToFirebase(){
 // Charger messages depuis Firebase
 function loadMessagesFromFirebase(){
   if(!S.isOnline||!S.currentGroup)return;
-  db.ref('messages/'+S.currentGroup).on('value',snapshot=>{
+  window.db.ref('messages/'+S.currentGroup).on('value',snapshot=>{
     if(!snapshot.exists())return;
     const fbMessages=[];
     snapshot.forEach(child=>{
@@ -449,7 +511,7 @@ function loadMessagesFromFirebase(){
 function syncQuestionsToFirebase(){
   if(!S.isOnline||!S.currentGroup)return;
   S.questions.forEach(q=>{
-    db.ref('questions/'+S.currentGroup+'/'+q.id).set({
+    window.db.ref('questions/'+S.currentGroup+'/'+q.id).set({
       pilgrimName:q.pilgrimName,
       question:q.question,
       answered:q.answered||false,
@@ -462,7 +524,7 @@ function syncQuestionsToFirebase(){
 // Charger questions depuis Firebase
 function loadQuestionsFromFirebase(){
   if(!S.isOnline||!S.currentGroup)return;
-  db.ref('questions/'+S.currentGroup).on('value',snapshot=>{
+  window.db.ref('questions/'+S.currentGroup).on('value',snapshot=>{
     if(!snapshot.exists())return;
     const fbQuestions=[];
     snapshot.forEach(child=>{
@@ -487,7 +549,7 @@ function loadQuestionsFromFirebase(){
 // Sync messages vocaux vers Firebase
 function syncVoiceToFirebase(msg){
   if(!S.isOnline||!S.currentGroup)return;
-  db.ref('voiceMessages/'+S.currentGroup+'/'+msg.id).set({
+  window.db.ref('voiceMessages/'+S.currentGroup+'/'+msg.id).set({
     audio:msg.audio,
     guideName:msg.guideName,
     timestamp:msg.timestamp
@@ -497,7 +559,7 @@ function syncVoiceToFirebase(msg){
 // Écouter messages vocaux Firebase
 function listenVoiceMessages(){
   if(!S.isOnline||!S.currentGroup)return;
-  db.ref('voiceMessages/'+S.currentGroup).limitToLast(10).on('child_added',snapshot=>{
+  window.db.ref('voiceMessages/'+S.currentGroup).limitToLast(10).on('child_added',snapshot=>{
     const data=snapshot.val();
     const msgId=parseInt(snapshot.key);
     
@@ -528,7 +590,7 @@ function listenVoiceMessages(){
 }
 
 function cleanupFirebaseListeners(){
-  S.fbListeners.forEach(path=>db.ref(path).off());
+  S.fbListeners.forEach(path=>window.db.ref(path).off());
   S.fbListeners=[];
 }
 
